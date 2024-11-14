@@ -26,6 +26,8 @@ install-dependencies:
   stage: install
   script:
   - echo "Install dependencies"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 
 build-images:
   stage: build
@@ -34,6 +36,8 @@ build-images:
   needs:
   - job: install-dependencies
     artifacts: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 
 unit-test:
   stage: test
@@ -42,6 +46,8 @@ unit-test:
   needs:
   - job: build-images
     artifacts: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 
 integration-test:
   stage: test
@@ -51,6 +57,8 @@ integration-test:
   - job: unit-test
   - job: build-images
     artifacts: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 
 component-test:
   stage: test
@@ -60,6 +68,8 @@ component-test:
   - job: integration-test
   - job: build-images
     artifacts: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 
 functional-test:
   stage: test
@@ -69,6 +79,8 @@ functional-test:
   - job: component-test
   - job: build-images
     artifacts: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 
 package:
   stage: package
@@ -78,6 +90,8 @@ package:
   - job: build-images
     artifacts: true
   - job: functional-test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 
 deliver-to-registry:
   stage: release
@@ -86,6 +100,8 @@ deliver-to-registry:
   needs:
   - job: package
     artifacts: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 
 deploy-chart:
   stage: deploy
@@ -94,3 +110,5 @@ deploy-chart:
   needs:
   - job: deliver-to-registry
     artifacts: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"

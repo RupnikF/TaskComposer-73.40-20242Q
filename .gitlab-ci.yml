@@ -7,24 +7,27 @@ run-scheduler-pipeline:
   trigger:
     include: scheduler/.gitlab-ci.yml
   rules:
-  - changes:
-    - scheduler/*
+    - changes:
+        - scheduler/*
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 run-service-registry-pipeline:
   stage: pipeline
   trigger:
     include: service-registry/.gitlab-ci.yml
   rules:
-  - changes:
-    - service-registry/*
+    - changes:
+        - service-registry/*
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 run-workflow-manager-pipeline:
   stage: pipeline
   trigger:
     include: workflow-manager/.gitlab-ci.yml
   rules:
-  - changes:
-    - workflow-manager/*
+    - changes:
+        - workflow-manager/*
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 e2e-test:
   stage: test
@@ -34,3 +37,6 @@ e2e-test:
   - job: run-scheduler-pipeline
   - job: run-service-registry-pipeline
   - job: run-workflow-manager-pipeline
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
