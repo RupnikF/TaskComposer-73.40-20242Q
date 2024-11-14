@@ -1,5 +1,5 @@
 include:
   - local: 'gitlab-ci-template.yml'
     inputs:
-      - microservice-name: 'scheduler'
-      - directory-name: 'scheduler'
+      microservice-name: 'scheduler'
+      directory-name: 'scheduler'
