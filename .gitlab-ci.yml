@@ -1,0 +1,36 @@
+stages:
+- pipeline
+- test
+
+run-scheduler-pipeline:
+  stage: pipeline
+  trigger:
+    include: scheduler/.gitlab-ci.yml
+  rules:
+  - changes:
+    - scheduler/*
+
+run-service-registry-pipeline:
+  stage: pipeline
+  trigger:
+    include: service-registry/.gitlab-ci.yml
+  rules:
+  - changes:
+    - service-registry/*
+
+run-workflow-manager-pipeline:
+  stage: pipeline
+  trigger:
+    include: workflow-manager/.gitlab-ci.yml
+  rules:
+  - changes:
+    - workflow-manager/*
+
+e2e-test:
+  stage: test
+  script:
+  - echo "E2E test"
+  needs:
+  - job: run-scheduler-pipeline
+  - job: run-service-registry-pipeline
+  - job: run-workflow-manager-pipeline

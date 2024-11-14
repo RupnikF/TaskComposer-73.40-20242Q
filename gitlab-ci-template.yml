@@ -1,0 +1,96 @@
+spec:
+  inputs:
+    microservice-name:
+      type: string
+    directory-name:
+      type: string
+
+---
+
+image: "docker:latest"
+
+variables:
+  DOCKER_BUILDKIT: 1
+  IMAGE_BASE: "$CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME"
+
+stages:
+  - install
+  - build
+  - test
+  - package
+  - release
+  - deploy
+
+
+install-dependencies:
+  stage: install
+  script:
+  - echo "Install dependencies"
+
+build-images:
+  stage: build
+  script:
+  - echo "Building images"
+  needs:
+  - job: install-dependencies
+    artifacts: true
+
+unit-test:
+  stage: test
+  script:
+  - echo "Unit test"
+  needs:
+  - job: build-images
+    artifacts: true
+
+integration-test:
+  stage: test
+  script:
+  - echo "Integration test"
+  needs:
+  - job: unit-test
+  - job: build-images
+    artifacts: true
+
+component-test:
+  stage: test
+  script:
+  - echo "Component test"
+  needs:
+  - job: integration-test
+  - job: build-images
+    artifacts: true
+
+functional-test:
+  stage: test
+  script:
+  - echo "Functional test"
+  needs:
+  - job: component-test
+  - job: build-images
+    artifacts: true
+
+package:
+  stage: package
+  script:
+  - echo "Packaging"
+  needs:
+  - job: build-images
+    artifacts: true
+  - job: functional-test
+
+deliver-to-registry:
+  stage: release
+  script:
+  - echo "Deliver to registry"
+  needs:
+  - job: package
+    artifacts: true
+
+deploy-chart:
+  stage: deploy
+  script:
+  - echo "Deploy chart to environment"
+  needs:
+  - job: deliver-to-registry
+    artifacts: true
