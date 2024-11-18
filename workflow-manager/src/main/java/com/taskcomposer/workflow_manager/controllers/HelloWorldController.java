@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-@RestController()
+@RestController
 @RequestMapping("/healthcheck")
 public class HelloWorldController {
     private static final String template = "Hello, %s!";
@@ -16,7 +16,7 @@ public class HelloWorldController {
 
     }
 
-    @GetMapping("/")
+    @GetMapping()
     public Greeting getGreeting(@RequestParam(value = "name", defaultValue = "World") String name) {
         return new Greeting(counter.incrementAndGet(), String.format(template, name));
     }
