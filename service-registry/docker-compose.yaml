@@ -1,0 +1,42 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8082"
+    depends_on:
+      - db
+      - broker
+    networks:
+      - db-network
+      - bus-network
+    env_file:
+      - .env.local
+  db:
+    image: "postgres"
+    env_file:
+      - .env.local
+    volumes:
+      - db-data:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+    networks:
+      - db-network
+  broker:
+    image: apache/kafka:latest
+    container_name: broker
+    env_file:
+      - .env.local.kafka
+    ports:
+      - "9092:9092"
+    volumes:
+      - broker-data:/var/lib/kafka/data
+
+networks:
+  db-network:
+    driver: bridge
+  bus-network:
+    driver: bridge
+
+volumes:
+  db-data:
+  broker-data:

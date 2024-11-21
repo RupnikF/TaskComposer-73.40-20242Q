@@ -161,6 +161,7 @@
 				</configuration>
 			</plugin>
 		</plugins>
+		<finalName>workflow-manager</finalName>
 	</build>
-
+	<packaging>jar</packaging>
 </project>
