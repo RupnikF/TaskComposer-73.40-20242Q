@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS workflows (
     id SERIAL PRIMARY KEY,
-    workflow_name TEXT UNIQUE NOT NULL,
+    workflow_name TEXT UNIQUE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS args (
@@ -26,6 +26,6 @@ CREATE TABLE IF NOT EXISTS step_inputs (
     step_id INT NOT NULL,
     input_key TEXT NOT NULL,
     input_value TEXT NOT NULL,
-    UNIQUE (workflow_id, input_key),
+    UNIQUE (step_id, input_key),
     CONSTRAINT fk_step_inputs_steps FOREIGN KEY (step_id) REFERENCES steps(id)
 );
