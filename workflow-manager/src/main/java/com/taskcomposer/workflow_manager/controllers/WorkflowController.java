@@ -11,14 +11,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/workflows")
 public class WorkflowController {
+    private final WorkflowService workflowService;
+
     @Autowired
     public WorkflowController(final WorkflowService workflowService) {
-
+        this.workflowService = workflowService;
     }
 
-    @PostMapping(consumes = {"application/yaml", "application/x-yaml"}, produces = { "application/yaml" })
+    @PostMapping(
+        consumes = {"application/yaml", "application/x-yaml"},
+        produces = {"application/json"}
+    )
     public Object uploadWorkflow(@RequestBody final WorkflowDTO body) {
-        System.out.println(body.getSteps());
-        return body;
+        return workflowService.saveWorkflow(body.toWorkflow()).getId();
     }
 }

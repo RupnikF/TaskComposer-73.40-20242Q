@@ -1,0 +1,23 @@
+###
+POST http://localhost:8080/workflows
+Content-Type: application/yaml
+
+name: "C workflow"
+tags:
+  - "Basic"
+args:
+  - property1:
+      default: "value"
+  - property2:
+      default: "value"
+steps:
+  - echo1:
+      service: "echo-service" # (default)
+      task: "echo"
+      input:
+        msg: "$args.property1"
+
+###
+
+GET http://localhost:8080/healthcheck
+

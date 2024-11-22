@@ -13,11 +13,6 @@ import org.springframework.context.annotation.ComponentScan;
 		SecurityAutoConfiguration.class,
 		ManagementWebSecurityAutoConfiguration.class
 })
-@ComponentScan(basePackages = {
-		"com.taskcomposer.workflow_manager.controllers",
-		"com.taskcomposer.workflow_manager.services",
-		"com.taskcomposer.workflow_manager.config"
-})
 @EntityScan( basePackages = "com.taskcomposer.workflow_manager.repositories.models")
 public class WorkflowManagerApplication {
 

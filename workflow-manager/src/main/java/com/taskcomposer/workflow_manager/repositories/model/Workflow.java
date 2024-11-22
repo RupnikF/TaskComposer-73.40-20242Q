@@ -1,16 +1,23 @@
 package com.taskcomposer.workflow_manager.repositories.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Setter;
 import lombok.Getter;
 
 import java.util.List;
 
+@Builder
 @Entity
 @Getter
 @Setter
 @Table(name = "workflows")
+@AllArgsConstructor
 public class Workflow {
+    public Workflow() {
+
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
