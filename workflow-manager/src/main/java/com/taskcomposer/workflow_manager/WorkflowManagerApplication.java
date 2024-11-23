@@ -7,11 +7,18 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.cloud.consul.ConsulAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication(exclude = {
 		ConsulAutoConfiguration.class,
 		SecurityAutoConfiguration.class,
 		ManagementWebSecurityAutoConfiguration.class
+})
+@ComponentScan(basePackages = {
+		"com.taskcomposer.workflow_manager.controllers",
+		"com.taskcomposer.workflow_manager.services",
+		"com.taskcomposer.workflow_manager.config",
+		"com.taskcomposer.workflow_manager.repositories"
 })
 @EntityScan( basePackages = "com.taskcomposer.workflow_manager.repositories.models")
 public class WorkflowManagerApplication {
