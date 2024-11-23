@@ -24,18 +24,28 @@ public class WorkflowService {
     public Optional<Workflow> getWorkflowByName(String name) {
         return workflowRepository.findByWorkflowName(name);
     }
+
+    public Optional<Workflow> getWorkflowById(Long id) {
+        return workflowRepository.findById(id);
+    }
+
     public List<Workflow> getAllWorkflows() {
         return workflowRepository.findAll();
     }
-    public Workflow saveWorkflow(Workflow workflow) {
+
+    public Workflow saveWorkflow(Workflow workflow) throws WorkflowAlreadyExistsException {
         if (workflowRepository.existsByWorkflowName(workflow.getWorkflowName())) {
             throw new WorkflowAlreadyExistsException(workflow.getWorkflowName());
         }
         return workflowRepository.save(workflow);
     }
 
-    public void deleteWorkflowByName(String name) {
-        Optional<Workflow> workflow = workflowRepository.findByWorkflowName(name);
-        workflow.ifPresent(workflowRepository::delete);
+    public boolean deleteWorkflowById(Long id) {
+        Optional<Workflow> workflow = workflowRepository.findById(id);
+        if (workflow.isPresent()) {
+            workflowRepository.delete(workflow.get());
+            return true;
+        }
+        return false;
     }
 }

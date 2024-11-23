@@ -6,13 +6,11 @@ import com.taskcomposer.workflow_manager.repositories.model.StepInput;
 import com.taskcomposer.workflow_manager.repositories.model.Workflow;
 import lombok.Getter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Getter
-public class WorkflowDTO {
+public class WorkflowDefinitionDTO {
     private String name;
     private List<String> tags;
     private List<Map<String, Map<String, String>>> args;
