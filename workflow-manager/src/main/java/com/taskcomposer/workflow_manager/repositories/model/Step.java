@@ -33,6 +33,9 @@ public class Step {
     @Column(name = "task")
     private String task;
 
+    @Column(name = "step_order", nullable = false)
+    private Integer stepOrder;
+
     @OneToMany(mappedBy = "step", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StepInput> stepInputs;
 

@@ -8,6 +8,7 @@ import lombok.Getter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Getter
 public class WorkflowDefinitionDTO {
@@ -25,6 +26,7 @@ public class WorkflowDefinitionDTO {
     }
 
     public List<Step> toSteps(Workflow workflow) {
+        AtomicInteger stepCounter = new AtomicInteger(0);
         return steps.stream().map((step) -> {
             var stepBuilder = Step.builder();
             var stepEntry = step.entrySet().stream().findFirst().orElseThrow(() -> new IllegalArgumentException("No keys for step map"));
@@ -32,7 +34,8 @@ public class WorkflowDefinitionDTO {
             stepBuilder.workflow(workflow)
                     .stepName(stepEntry.getKey())
                     .service(stepDto.service)
-                    .task(stepDto.task);
+                    .task(stepDto.task)
+                    .stepOrder(stepCounter.getAndIncrement());
             Step stepModel = stepBuilder.build();
             stepModel.setStepInputs(
                 stepDto.input.entrySet()

@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS steps (
     id SERIAL PRIMARY KEY,
     workflow_id INT NOT NULL,
     step_name TEXT NOT NULL,
+    step_order INT NOT NULL,
     service TEXT,
     task TEXT,
     CONSTRAINT fk_steps_workflows FOREIGN KEY (workflow_id) REFERENCES workflows(id)

@@ -31,6 +31,7 @@ public class Workflow {
     private List<Argument> args;
 
     @OneToMany(mappedBy = "workflow", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderColumn(name = "step_order")
     private List<Step> steps;
 
 }
