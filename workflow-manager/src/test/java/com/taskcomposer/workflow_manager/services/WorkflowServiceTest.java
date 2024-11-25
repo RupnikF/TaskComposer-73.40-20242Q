@@ -1,7 +1,11 @@
 package com.taskcomposer.workflow_manager.services;
 
+import com.taskcomposer.workflow_manager.repositories.ServiceRepository;
 import com.taskcomposer.workflow_manager.repositories.WorkflowRepository;
+import com.taskcomposer.workflow_manager.repositories.model.Step;
 import com.taskcomposer.workflow_manager.repositories.model.Workflow;
+import com.taskcomposer.workflow_manager.services.exceptions.ServiceNotFoundException;
+import com.taskcomposer.workflow_manager.services.exceptions.TaskNotFoundException;
 import com.taskcomposer.workflow_manager.services.exceptions.WorkflowAlreadyExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,7 +13,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -18,6 +24,9 @@ class WorkflowServiceTest {
 
     @Mock
     private WorkflowRepository workflowRepository;
+
+    @Mock
+    private ServiceRepository serviceRepository;
 
     @InjectMocks
     private WorkflowService workflowService;
@@ -77,6 +86,40 @@ class WorkflowServiceTest {
         when(workflowRepository.existsByWorkflowName(workflow.getWorkflowName())).thenReturn(true);
 
         assertThrows(WorkflowAlreadyExistsException.class, () -> {
+            workflowService.saveWorkflow(workflow);
+        });
+    }
+
+    @Test
+    void testSaveWorkflowServiceNotFound() {
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowName("NewWorkflow");
+        Step step = new Step();
+        step.setService("NonExistentService");
+        workflow.setSteps(List.of(step));
+
+        when(workflowRepository.existsByWorkflowName(workflow.getWorkflowName())).thenReturn(false);
+        when(serviceRepository.getServiceByName(step.getService())).thenReturn(Optional.empty());
+
+        assertThrows(ServiceNotFoundException.class, () -> {
+            workflowService.saveWorkflow(workflow);
+        });
+    }
+
+    @Test
+    void testSaveWorkflowTaskNotFound() {
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowName("NewWorkflow");
+        Step step = new Step();
+        step.setService("ExistingService");
+        step.setTask("NonExistentTask");
+        workflow.setSteps(List.of(step));
+
+        com.taskcomposer.workflow_manager.repositories.model.Service service = new com.taskcomposer.workflow_manager.repositories.model.Service("ExistingService", Set.of("ExistingTask"));
+        when(workflowRepository.existsByWorkflowName(workflow.getWorkflowName())).thenReturn(false);
+        when(serviceRepository.getServiceByName(step.getService())).thenReturn(Optional.of(service));
+
+        assertThrows(TaskNotFoundException.class, () -> {
             workflowService.saveWorkflow(workflow);
         });
     }

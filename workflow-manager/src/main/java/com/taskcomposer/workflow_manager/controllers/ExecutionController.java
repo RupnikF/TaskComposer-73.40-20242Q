@@ -35,7 +35,7 @@ public class ExecutionController {
             return ResponseEntity.badRequest().body("Workflow not found");
         }
         Workflow workflow = workflowOptional.get();
-        //executionService.executeWorkflow(workflow);
+        executionService.executeWorkflow(workflow, body.getTags(), body.getParameters(), body.getArgs());
         return ResponseEntity.ok().build();
     }
 }

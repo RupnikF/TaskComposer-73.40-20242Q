@@ -3,6 +3,8 @@ package com.taskcomposer.workflow_manager.controllers;
 import com.taskcomposer.workflow_manager.controllers.dtos.WorkflowDefinitionDTO;
 import com.taskcomposer.workflow_manager.repositories.model.Workflow;
 import com.taskcomposer.workflow_manager.services.WorkflowService;
+import com.taskcomposer.workflow_manager.services.exceptions.ServiceNotFoundException;
+import com.taskcomposer.workflow_manager.services.exceptions.TaskNotFoundException;
 import com.taskcomposer.workflow_manager.services.exceptions.WorkflowAlreadyExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,13 +32,15 @@ public class WorkflowController {
         consumes = {"application/yaml", "application/x-yaml"},
         produces = {"application/json"}
     )
-    public ResponseEntity<Workflow> uploadWorkflow(@RequestBody final WorkflowDefinitionDTO body) {
+    public ResponseEntity<Object> uploadWorkflow(@RequestBody final WorkflowDefinitionDTO body) {
         try {
             Workflow createdWorkflow = workflowService.saveWorkflow(body.toWorkflow());
             URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(createdWorkflow.getId()).toUri();
             return ResponseEntity.created(location).body(createdWorkflow);
-        } catch (WorkflowAlreadyExistsException _) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        } catch (WorkflowAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (ServiceNotFoundException | TaskNotFoundException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 

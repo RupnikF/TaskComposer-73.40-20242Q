@@ -13,17 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Getter
 public class WorkflowDefinitionDTO {
     private String name;
-    private List<String> tags;
     private List<Map<String, Map<String, String>>> args;
 
     private List<Map<String, StepDTO>> steps;
-
-    @Getter
-    public static class StepDTO {
-        private String service;
-        private String task;
-        private Map<String, String> input;
-    }
 
     public List<Step> toSteps(Workflow workflow) {
         AtomicInteger stepCounter = new AtomicInteger(0);
@@ -33,12 +25,12 @@ public class WorkflowDefinitionDTO {
             var stepDto = stepEntry.getValue();
             stepBuilder.workflow(workflow)
                     .stepName(stepEntry.getKey())
-                    .service(stepDto.service)
-                    .task(stepDto.task)
+                    .service(stepDto.getService())
+                    .task(stepDto.getTask())
                     .stepOrder(stepCounter.getAndIncrement());
             Step stepModel = stepBuilder.build();
             stepModel.setStepInputs(
-                stepDto.input.entrySet()
+                stepDto.getInput().entrySet()
                     .stream()
                     .map((input) ->
                         StepInput.builder()
