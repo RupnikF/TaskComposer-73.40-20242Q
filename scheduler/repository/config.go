@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
@@ -10,12 +9,7 @@ import (
 
 var db *gorm.DB
 
-func init() {
-	// Load the .env file
-	err := godotenv.Load(".env.local")
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
+func Initialize() {
 	// Construct the DSN
 	dsn := "host=" + os.Getenv("POSTGRES_HOST") +
 		" user=" + os.Getenv("POSTGRES_USER") +
