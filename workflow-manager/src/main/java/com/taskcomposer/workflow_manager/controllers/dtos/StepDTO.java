@@ -11,6 +11,7 @@ import java.util.Map;
 @Getter
 @Setter
 public class StepDTO {
+    private String name;
     private String service;
     private String task;
     private Map<String, String> input;
@@ -23,6 +24,7 @@ public class StepDTO {
         }
         stepDTO.setInput(stepInputs);
         stepDTO.setTask(step.getTask());
+        stepDTO.setName(step.getStepName());
         stepDTO.setService(step.getService());
         return stepDTO;
     }
