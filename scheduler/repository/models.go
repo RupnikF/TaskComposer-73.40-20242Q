@@ -32,12 +32,27 @@ type ExecutionParams struct {
 }
 type Step struct {
 	gorm.Model
-	WorkflowID uint
-	Name       string
-	Service    string
-	Task       string
-	StepOrder  int // Order of the step in the workflow MUST BE DONE MANUALLY
-	Inputs     []KeyValueStep
+	ExecutionID uint
+	Name        string
+	Service     string
+	Task        string
+	StepOrder   int // Order of the step in the workflow MUST BE DONE MANUALLY
+	Inputs      []*KeyValueStep
+}
+
+func (s *Step) toExecutionStepDTO() ExecutionStepDTO {
+	inputs := make(map[string]string)
+	for _, i := range s.Inputs {
+		inputs[i.Key] = i.Value
+	}
+	return ExecutionStepDTO{
+		Service:     s.Service,
+		Name:        s.Name,
+		Task:        s.Task,
+		Input:       inputs,
+		ExecutionID: s.ExecutionID,
+		StepOrder:   s.StepOrder,
+	}
 }
 
 type State struct {
@@ -45,14 +60,15 @@ type State struct {
 	ExecutionID uint
 	Step        string
 	Status      string
-	Outputs     []KeyValueOutput
-	Arguments   []KeyValueArgument
+	Outputs     []*KeyValueOutput
+	Arguments   []*KeyValueArgument
 }
 
 type Execution struct {
 	gorm.Model
 	WorkflowID uint
-	Tag        string
-	State      State
+	Tags       []string
+	State      *State
+	Steps      []*Step
 	Params     *ExecutionParams
 }
