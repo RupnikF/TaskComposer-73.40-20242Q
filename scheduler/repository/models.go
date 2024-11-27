@@ -6,6 +6,13 @@ import (
 	"time"
 )
 
+const (
+	PENDING   string = "PENDING"
+	EXECUTING string = "EXECUTING"
+	SUCCESS   string = "SUCCESS"
+	FAILED    string = "FAILED"
+)
+
 type KeyValueOutput struct {
 	gorm.Model
 	Key     string
@@ -40,7 +47,7 @@ type Step struct {
 	Inputs      []*KeyValueStep
 }
 
-func (s *Step) toExecutionStepDTO() ExecutionStepDTO {
+func (s *Step) ToExecutionStepDTO() ExecutionStepDTO {
 	inputs := make(map[string]string)
 	for _, i := range s.Inputs {
 		inputs[i.Key] = i.Value

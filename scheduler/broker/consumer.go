@@ -41,3 +41,35 @@ func ConsumeMessages(config *kafka.ConfigMap, topic string, timeout time.Duratio
 		log.Fatalf("Failed to close consumer: %s\n", err)
 	}
 }
+
+func ConsumeMessageWithHandler(config *kafka.ConfigMap, topic string, timeout time.Duration, handler func([]byte)) {
+	c, err := kafka.NewConsumer(config)
+	if err != nil {
+		log.Fatalf("Failed to create consumer: %s\n", err)
+	}
+
+	err = c.SubscribeTopics([]string{topic}, nil)
+
+	if err != nil {
+		log.Fatalf("Failed to subscribe to topic: %s\n", err)
+	}
+
+	// A signal handler or similar could be used to set this to false to break the loop.
+	run := true
+
+	for run {
+		msg, err := c.ReadMessage(timeout)
+		if err == nil {
+			go handler(msg.Value)
+		} else if !err.(kafka.Error).IsTimeout() {
+			// The client will automatically try to recover from all errors.
+			// Timeout is not considered an error because it is raised by
+			// ReadMessage in absence of messages.
+			fmt.Printf("Consumer error: %v (%v)\n", err, msg)
+		}
+	}
+	err = c.Close()
+	if err != nil {
+		log.Fatalf("Failed to close consumer: %s\n", err)
+	}
+}

@@ -7,7 +7,7 @@ import (
 )
 
 // Tendria que llamarse con una go routine
-func ProduceMessage(config *kafka.ConfigMap, topic string, message string) error {
+func ProduceMessage(config *kafka.ConfigMap, topic string, message []byte) error {
 	p, err := kafka.NewProducer(config)
 	if err != nil {
 		log.Fatalf("Failed to create producer: %s\n", err)
@@ -19,7 +19,7 @@ func ProduceMessage(config *kafka.ConfigMap, topic string, message string) error
 
 	err = p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Value:          []byte(message),
+		Value:          message,
 	}, deliveryChan)
 	if err != nil {
 		return err

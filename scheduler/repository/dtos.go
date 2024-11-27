@@ -1,13 +1,13 @@
 package repository
 
-type StepDTO struct {
+type SubmisssionStepDTO struct {
 	Service string            `json:"service"`
 	Name    string            `json:"name"`
 	Task    string            `json:"task"`
 	Input   map[string]string `json:"input"`
 }
 
-func (s *StepDTO) toStep(stepIndex int) Step {
+func (s *SubmisssionStepDTO) ToStep(stepIndex int) Step {
 	inputs := make([]*KeyValueStep, len(s.Input))
 	for k, v := range s.Input {
 		inputs = append(inputs, &KeyValueStep{
@@ -25,15 +25,15 @@ func (s *StepDTO) toStep(stepIndex int) Step {
 }
 
 type ExecutionSubmissionDTO struct {
-	WorkflowName string            `json:"workflow_name"`
-	WorkflowID   uint              `json:"workflow_id"`
-	Tags         []string          `json:"tags"`
-	Parameters   map[string]string `json:"parameters"`
-	Arguments    map[string]string `json:"args"`
-	Steps        []StepDTO         `json:"steps"`
+	WorkflowName string               `json:"workflow_name"`
+	WorkflowID   uint                 `json:"workflow_id"`
+	Tags         []string             `json:"tags"`
+	Parameters   map[string]string    `json:"parameters"`
+	Arguments    map[string]string    `json:"args"`
+	Steps        []SubmisssionStepDTO `json:"steps"`
 }
 
-func (e ExecutionSubmissionDTO) toExecution(status string) Execution {
+func (e ExecutionSubmissionDTO) ToExecution(status string) Execution {
 
 	params := ExecutionParams{}
 
@@ -48,7 +48,7 @@ func (e ExecutionSubmissionDTO) toExecution(status string) Execution {
 
 	steps := make([]*Step, len(e.Steps))
 	for i, s := range e.Steps {
-		step := s.toStep(i)
+		step := s.ToStep(i)
 		steps = append(steps, &step)
 	}
 

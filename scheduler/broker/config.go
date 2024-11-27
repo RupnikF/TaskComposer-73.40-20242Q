@@ -15,6 +15,10 @@ func GetExecutionKafkaConfig() kafka.ConfigMap {
 		"auto.offset.reset": "earliest",
 	}
 }
+func GetExecutionKafkaTopic() string {
+	return os.Getenv("SUBMISSIONS_TOPIC")
+}
+
 func GetExecutionStepKafkaConfig() kafka.ConfigMap {
 	bootstrapServers := os.Getenv("KAFKA_HOST") + ":9092"
 	return kafka.ConfigMap{
@@ -22,6 +26,9 @@ func GetExecutionStepKafkaConfig() kafka.ConfigMap {
 		"group.id":          "steps",
 		"auto.offset.reset": "earliest",
 	}
+}
+func GetExecutionStepKafkaTopic() string {
+	return os.Getenv("STEPS_TOPIC")
 }
 
 func Initialize() {
@@ -38,10 +45,10 @@ func Initialize() {
 		nil, // Default options
 		[]kafka.TopicSpecification{
 			{
-				Topic: "execution_submissions",
+				Topic: GetExecutionKafkaTopic(),
 			},
 			{
-				Topic: "execution_steps",
+				Topic: GetExecutionStepKafkaTopic(),
 			},
 		},
 	)

@@ -17,7 +17,8 @@ func main() {
 	}
 
 	// Initialize the repository and broker
-	repository.Initialize()
+	executionRepository := repository.NewExecutionRepository(repository.Initialize())
+
 	broker.Initialize()
 
 	r := gin.Default()

@@ -7,9 +7,7 @@ import (
 	"os"
 )
 
-var db *gorm.DB
-
-func Initialize() {
+func Initialize() *gorm.DB {
 	// Construct the DSN
 	dsn := "host=" + os.Getenv("POSTGRES_HOST") +
 		" user=" + os.Getenv("POSTGRES_USER") +
@@ -28,5 +26,5 @@ func Initialize() {
 	if err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
-	db = connection
+	return connection
 }
