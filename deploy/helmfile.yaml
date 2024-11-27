@@ -1,0 +1,21 @@
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
+releases:
+  # Workflow Manager
+  - name: postgresql
+    namespace: workflow-manager
+    chart: bitnami/postgresql
+    version: 16.2.2
+    values:
+      - auth:
+          database: workflow_db
+          username: workflow_db_user
+          password: workflow_db_password
+      - persistence:
+          size: 8Gi
+      - replication:
+          enabled: false
+      - metrics:
+          enabled: false # No se si queremos esto
