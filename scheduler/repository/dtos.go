@@ -56,7 +56,7 @@ func (e ExecutionSubmissionDTO) ToExecution(status string) *Execution {
 	}
 	for i, s := range e.Steps {
 		step := s.ToStep(i)
-		steps = append(steps, &step)
+		steps[i] = &step
 	}
 	if len(steps) <= 0 {
 		log.Printf("No steps provided, skipped\n")

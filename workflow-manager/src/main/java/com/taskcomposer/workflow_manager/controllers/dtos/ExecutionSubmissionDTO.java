@@ -21,5 +21,6 @@ public class ExecutionSubmissionDTO {
         this.tags = tags;
         this.parameters = parameters;
         this.steps = workflow.getSteps().stream().map(StepDTO::fromStep).toList();
+        this.args = args;
     }
 }
