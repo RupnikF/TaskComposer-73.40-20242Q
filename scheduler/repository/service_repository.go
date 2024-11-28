@@ -19,3 +19,7 @@ func NewServiceRepository() ServiceRepository {
 		},
 	}
 }
+
+func (r *ServiceRepository) GetService(serviceName string) *Service {
+	return r.serviceMap[serviceName]
+}
