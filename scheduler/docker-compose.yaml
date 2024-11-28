@@ -46,6 +46,8 @@ services:
     networks:
       - default
       - bus-network
+    environment:
+      HOSTNAME_COMMAND: "route -n | awk '/UG[ \t]/{print $$2}'"
 
 networks:
   db-network:
