@@ -6,40 +6,52 @@ import (
 	"scheduler/repository"
 	"strings"
 
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/goccy/go-json"
+	kafka "github.com/segmentio/kafka-go"
 )
 
 type Handler struct {
-	executionRepository repository.ExecutionRepository
-	serviceRepository   repository.ServiceRepository
+	executionRepository  *repository.ExecutionRepository
+	serviceRepository    *repository.ServiceRepository
+	executionStepsWriter *kafka.Writer
+	serviceWriter        *kafka.Writer
 }
 
-func NewHandler(executionRepository repository.ExecutionRepository, serviceRepository repository.ServiceRepository) *Handler {
-	return &Handler{executionRepository, serviceRepository}
+func NewHandler(
+	executionRepository *repository.ExecutionRepository,
+	serviceRepository *repository.ServiceRepository,
+	executionStepsWriter *kafka.Writer,
+	serviceWriter *kafka.Writer,
+) *Handler {
+	return &Handler{executionRepository, serviceRepository, executionStepsWriter, serviceWriter}
 }
 
-func (h *Handler) handleExecutionSubmission(message []byte) {
+func (h *Handler) HandleExecutionSubmission(message []byte) {
+	log.Printf(string(message))
 	submission := repository.ExecutionSubmissionDTO{}
 	err := json.Unmarshal(message, &submission)
 	if err != nil {
 		log.Printf("Failed to unmarshal message: %s\n", err)
+		return
 	}
+	log.Printf("Received submission: %v\n", submission)
 	execution := submission.ToExecution(repository.PENDING)
-	h.executionRepository.CreateExecution(&execution)
+	if execution == nil {
+		log.Printf("Error parsing execution\n")
+		return
+	}
+	h.executionRepository.CreateExecution(execution)
 	stepToExecute := execution.Steps[0].ToExecutionStepDTO()
 
 	//Enqueue the step
-	config := GetExecutionStepKafkaConfig()
 	bytes, err := json.Marshal(stepToExecute)
 	if err != nil {
 		log.Printf("Failed to marshal message: %s\n", err)
 	}
-	err = ProduceMessage(&config, GetExecutionStepKafkaTopic(), bytes)
+	err = ProduceMessage(h.executionStepsWriter, bytes)
 	if err != nil {
 		log.Printf("Failed to produce message: %s\n", err)
 	}
-
 }
 
 type ServiceMessage struct {
@@ -50,8 +62,7 @@ type ServiceMessage struct {
 
 // Matches with all strings that start with args.
 
-func (h *Handler) handleExecutionStep(message []byte) {
-
+func (h *Handler) HandleExecutionStep(message []byte) {
 	step := repository.ExecutionStepDTO{}
 	err := json.Unmarshal(message, &step)
 	if err != nil {
@@ -83,30 +94,29 @@ func (h *Handler) handleExecutionStep(message []byte) {
 
 	inputs := make(map[string]interface{})
 
-	// TODO: value is not being useful, should do typechecking
-	for k := range step.Input {
-		isArgs := argsMatcher.MatchString(k)
+	for arg, key := range step.Input {
+		isArgs := argsMatcher.MatchString(key)
 		existMapping := true
 		if isArgs {
-			argKey := strings.Replace(k, "args.", "", 1)
-			result, ok := argsMap[k]
+			argKey := strings.Replace(key, "args.", "", 1)
+			result, ok := argsMap[argKey]
 			if !ok {
 				existMapping = false
 			} else {
-				inputs[argKey] = result
+				inputs[arg] = result
 			}
 		} else {
-			result, ok := outputMap[k]
+			result, ok := outputMap[key]
 			if !ok {
 				existMapping = false
 			} else {
-				inputs[k] = result
+				inputs[arg] = result
 			}
 		}
 		if !existMapping {
 			state.Status = repository.FAILED
 			h.executionRepository.UpdateState(state)
-			log.Printf("Required output key not found: %s\n", k)
+			log.Printf("Required output key not found: %s\n", key)
 			return
 		}
 	}
@@ -123,10 +133,13 @@ func (h *Handler) handleExecutionStep(message []byte) {
 		return
 	}
 
-	err = ProduceMessage(&kafka.ConfigMap{
-		"bootstrap.servers": config.Server,
-	}, config.Topic, message)
+	err = ProduceTopicMessage(h.serviceWriter, message, config.Topic)
 	if err != nil {
+		state.Status = repository.FAILED
+		h.executionRepository.UpdateState(state)
 		log.Printf("Failed to produce message: %s\n", err)
+		return
 	}
+	state.Status = repository.EXECUTING
+	h.executionRepository.UpdateState(state)
 }

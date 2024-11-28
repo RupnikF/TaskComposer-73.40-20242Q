@@ -1,10 +1,8 @@
 ###
-POST http://localhost:8080/workflows
+POST http://localhost:8081/workflows
 Content-Type: application/yaml
 
 name: "C workflow"
-tags:
-  - "Basic"
 args:
   - property1:
       default: "value"
@@ -17,7 +15,25 @@ steps:
       input:
         msg: "$args.property1"
 
+
+###
+GET http://localhost:8081/workflows
+
+###
+POST http://localhost:8081/executions
+Content-Type: application/json
+
+{
+  "workflowName": "C workflow",
+  "tags": [],
+  "parameters": {},
+  "args": {
+    "property1": "hola",
+    "property2": "chau"
+  }
+}
+
 ###
 
-GET http://localhost:8080/healthcheck
+GET http://localhost:8081/healthcheck
 

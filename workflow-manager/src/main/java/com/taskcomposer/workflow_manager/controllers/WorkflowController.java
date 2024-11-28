@@ -71,10 +71,7 @@ public class WorkflowController {
     public ResponseEntity<Workflow> getWorkflow(@PathVariable(name = "id") final Long id) {
         Optional<Workflow> workflow = workflowService.getWorkflowById(id);
 
-        if (workflow.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok().body(workflow.get());
+        return workflow.map(value -> ResponseEntity.ok().body(value)).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")

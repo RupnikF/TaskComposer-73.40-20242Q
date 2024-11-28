@@ -1,33 +1,54 @@
 package broker
 
 import (
-	"fmt"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"log"
+	"net"
 	"os"
+	"strconv"
+
+	"github.com/segmentio/kafka-go"
 )
 
-func GetExecutionKafkaConfig() kafka.ConfigMap {
+func GetExecutionReader() *kafka.Reader {
 	bootstrapServers := os.Getenv("KAFKA_HOST") + ":9092"
-	return kafka.ConfigMap{
-		"bootstrap.servers": bootstrapServers,
-		"group.id":          "submissions",
-		"auto.offset.reset": "earliest",
-	}
+	topic := GetExecutionKafkaTopic()
+	return GetReader([]string{bootstrapServers}, topic, "submissions")
 }
+
+func GetStepReader() *kafka.Reader {
+	bootstrapServers := os.Getenv("KAFKA_HOST") + ":9092"
+	topic := GetStepKafkaTopic()
+	return GetReader([]string{bootstrapServers}, topic, "steps")
+}
+
+func GetReader(bootstrapServers []string, topic string, groupid string) *kafka.Reader {
+	return kafka.NewReader(kafka.ReaderConfig{
+		Brokers:  bootstrapServers,
+		GroupID:  groupid,
+		Topic:    topic,
+		MaxBytes: 10e6,
+	})
+}
+
+func GetWriter(bootstrapServers []string, topic string) *kafka.Writer {
+	return kafka.NewWriter(kafka.WriterConfig{
+		Brokers:  bootstrapServers,
+		Topic:    topic,
+		Balancer: &kafka.LeastBytes{},
+	})
+}
+
+func GetGenericWriter(bootstrapServers []string) *kafka.Writer {
+	return kafka.NewWriter(kafka.WriterConfig{
+		Brokers:  bootstrapServers,
+		Balancer: &kafka.LeastBytes{},
+	})
+}
+
 func GetExecutionKafkaTopic() string {
 	return os.Getenv("SUBMISSIONS_TOPIC")
 }
 
-func GetExecutionStepKafkaConfig() kafka.ConfigMap {
-	bootstrapServers := os.Getenv("KAFKA_HOST") + ":9092"
-	return kafka.ConfigMap{
-		"bootstrap.servers": bootstrapServers,
-		"group.id":          "steps",
-		"auto.offset.reset": "earliest",
-	}
-}
-func GetExecutionStepKafkaTopic() string {
+func GetStepKafkaTopic() string {
 	return os.Getenv("STEPS_TOPIC")
 }
 
@@ -35,32 +56,38 @@ func Initialize() {
 
 	bootstrapServers := os.Getenv("KAFKA_HOST") + ":9092"
 
-	admin, err := kafka.NewAdminClient(&kafka.ConfigMap{"bootstrap.servers": bootstrapServers})
+	conn, err := kafka.Dial("tcp", bootstrapServers)
 	if err != nil {
-		log.Fatalf("Failed to create AdminClient: %s\n", err)
+		panic(err.Error())
 	}
-	defer admin.Close()
+	defer conn.Close()
 
-	results, err := admin.CreateTopics(
-		nil, // Default options
-		[]kafka.TopicSpecification{
-			{
-				Topic: GetExecutionKafkaTopic(),
-			},
-			{
-				Topic: GetExecutionStepKafkaTopic(),
-			},
+	controller, err := conn.Controller()
+	if err != nil {
+		panic(err.Error())
+	}
+	var controllerConn *kafka.Conn
+	controllerConn, err = kafka.Dial("tcp", net.JoinHostPort(controller.Host, strconv.Itoa(controller.Port)))
+	if err != nil {
+		panic(err.Error())
+	}
+	defer controllerConn.Close()
+
+	topicConfigs := []kafka.TopicConfig{
+		{
+			Topic:             GetExecutionKafkaTopic(),
+			NumPartitions:     1,
+			ReplicationFactor: 1,
 		},
-	)
-	if err != nil {
-		log.Fatalf("Failed to create topic: %s\n", err)
+		{
+			Topic:             GetStepKafkaTopic(),
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		},
 	}
 
-	for _, result := range results {
-		if result.Error.Code() != kafka.ErrNoError {
-			fmt.Printf("Failed to create topic %s: %s\n", result.Topic, result.Error)
-		} else {
-			fmt.Printf("Successfully created topic: %s\n", result.Topic)
-		}
+	err = controllerConn.CreateTopics(topicConfigs...)
+	if err != nil {
+		panic(err.Error())
 	}
 }

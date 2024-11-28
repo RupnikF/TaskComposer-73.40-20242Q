@@ -1,37 +1,37 @@
 package broker
 
 import (
-	"fmt"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"context"
 	"log"
+
+	kafka "github.com/segmentio/kafka-go"
 )
 
 // Tendria que llamarse con una go routine
-func ProduceMessage(config *kafka.ConfigMap, topic string, message []byte) error {
-	p, err := kafka.NewProducer(config)
-	if err != nil {
-		log.Fatalf("Failed to create producer: %s\n", err)
+func ProduceMessage(writer *kafka.Writer, message []byte) error {
+	msg := kafka.Message{
+		Value: message,
 	}
 
-	defer p.Close()
-
-	deliveryChan := make(chan kafka.Event)
-
-	err = p.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Value:          message,
-	}, deliveryChan)
+	err := writer.WriteMessages(context.Background(), msg)
 	if err != nil {
+		log.Println("Failed to write messages:", err)
 		return err
 	}
 
-	e := <-deliveryChan
-	m := e.(*kafka.Message)
+	return nil
+}
 
-	if m.TopicPartition.Error != nil {
-		return m.TopicPartition.Error
-	} else {
-		fmt.Printf("Message %v delivered to topic %v [%v] at offset %v\n", m.Key, *m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
+func ProduceTopicMessage(writer *kafka.Writer, message []byte, topic string) error {
+	msg := kafka.Message{
+		Value: message,
+		Topic: topic,
+	}
+
+	err := writer.WriteMessages(context.Background(), msg)
+	if err != nil {
+		log.Println("Failed to write messages:", err)
+		return err
 	}
 
 	return nil

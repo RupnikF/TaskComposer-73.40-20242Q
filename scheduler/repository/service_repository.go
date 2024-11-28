@@ -9,8 +9,8 @@ type ServiceRepository struct {
 	serviceMap map[string]*Service
 }
 
-func NewServiceRepository() ServiceRepository {
-	return ServiceRepository{
+func NewServiceRepository() *ServiceRepository {
+	return &ServiceRepository{
 		map[string]*Service{
 			"native": {
 				Server: "aa",

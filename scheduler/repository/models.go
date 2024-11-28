@@ -2,8 +2,9 @@ package repository
 
 import (
 	"database/sql"
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 const (
@@ -74,8 +75,8 @@ type State struct {
 type Execution struct {
 	gorm.Model
 	WorkflowID uint
-	Tags       []string
-	State      *State
-	Steps      []*Step
-	Params     *ExecutionParams
+	// Tags       []string `gorm:"type:varchar(64)[]" json:"tags"`
+	State  *State
+	Steps  []*Step
+	Params *ExecutionParams
 }
