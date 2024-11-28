@@ -52,7 +52,7 @@ func (e ExecutionSubmissionDTO) ToExecution(status string) *Execution {
 
 	steps := make([]*Step, len(e.Steps))
 	if e.Steps == nil {
-		e.Steps = []
+		e.Steps = make([]SubmisssionStepDTO, 0)
 	}
 	for i, s := range e.Steps {
 		step := s.ToStep(i)
