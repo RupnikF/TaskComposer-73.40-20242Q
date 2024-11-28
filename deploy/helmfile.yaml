@@ -4,18 +4,27 @@ repositories:
 
 releases:
   # Workflow Manager
-  - name: postgresql
+  - name: wf-db
     namespace: workflow-manager
     chart: bitnami/postgresql
     version: 16.2.2
     values:
       - auth:
-          database: workflow_db
-          username: workflow_db_user
-          password: workflow_db_password
+          database: {{ requiredEnv "WORKFLOWS_POSTGRES_DB" }}
+          username: {{ requiredEnv "WORKFLOWS_POSTGRES_USER" }}
+          password: {{ requiredEnv "WORKFLOWS_POSTGRES_PASSWORD" }}
+
       - persistence:
           size: 8Gi
       - replication:
           enabled: false
       - metrics:
           enabled: false # No se si queremos esto
+  - name: workflow-manager
+    namespace: workflow-manager
+    chart: ./workflow-manager
+    values:
+      - workflows_db_host: "wf-db-postgresql"
+      - workflows_db_user: {{ requiredEnv "WORKFLOWS_POSTGRES_USER" }}
+      - workflows_db_pass: {{ requiredEnv "WORKFLOWS_POSTGRES_PASSWORD" }}
+      - workflows_db_db: {{ requiredEnv "WORKFLOWS_POSTGRES_DB" }}
