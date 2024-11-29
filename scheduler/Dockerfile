@@ -1,4 +1,4 @@
-FROM golang:1.23 as builder
+FROM golang:1.23 AS builder
 
 WORKDIR /usr/src/app
 
@@ -7,15 +7,15 @@ COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 
 COPY . .
-RUN go build -v -o ./app .
+RUN go build -v -o /app .
 
-FROM alpine:3.20
+FROM ubuntu:latest
 
-WORKDIR /usr/src/app
+WORKDIR /
 
-COPY --from=builder ./app .
-COPY ./*.sh ./
+COPY --from=builder /app .
+COPY ./*.sh .
 
 RUN chmod +x ./*.sh
 
-CMD ["./start.sh"]
+ENTRYPOINT ["./start.sh"]
