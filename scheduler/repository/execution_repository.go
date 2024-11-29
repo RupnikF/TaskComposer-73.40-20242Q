@@ -39,7 +39,7 @@ func (r *ExecutionRepository) UpdateState(state *State) {
 
 func (r *ExecutionRepository) GetStateByExecutionID(executionID uint) *State {
 	state := State{}
-	tx := r.db.Where("execution_id = ?", executionID).First(&state)
+	tx := r.db.Where("execution_id = ?", executionID).Preload("Arguments").Preload("Outputs").First(&state)
 	if tx.Error != nil {
 		log.Printf("Failed to get state: %v", tx.Error)
 	}

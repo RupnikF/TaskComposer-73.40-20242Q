@@ -20,7 +20,7 @@ steps:
 GET http://localhost:8080/workflows
 
 ###
-POST http://localhost:8080/executions
+POST http://localhost:8081/executions
 Content-Type: application/json
 
 {

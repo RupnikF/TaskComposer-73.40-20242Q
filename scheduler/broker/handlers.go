@@ -67,7 +67,10 @@ func (h *Handler) HandleExecutionStep(message []byte) {
 	err := json.Unmarshal(message, &step)
 	if err != nil {
 		log.Printf("Failed to unmarshal message: %s\n", err)
+		return
 	}
+
+	log.Printf("Received step: %v\n", step)
 
 	config := h.serviceRepository.GetService(step.Service)
 	if config == nil {
@@ -78,14 +81,20 @@ func (h *Handler) HandleExecutionStep(message []byte) {
 	state := h.executionRepository.GetStateByExecutionID(step.ExecutionID)
 
 	// TODO: move argsMatcher so it only compiles once.
-	argsMatcher := regexp.MustCompile(`args\.(.+)`)
+	argsMatcher := regexp.MustCompile(`\$args\.(.+)`)
 	// Build corresponding inputs
 	argsMap := make(map[string]interface{})
 	outputMap := make(map[string]interface{})
 
 	for _, arg := range state.Arguments {
-		// TODO: type shouldnt just be string
-		argsMap[arg.Key] = arg.Value
+		var value any
+		err = json.Unmarshal([]byte(arg.Value), &value)
+		if err != nil {
+			log.Printf("Failed to unmarshal value: %s - %s\n", arg.Value, err.Error())
+			argsMap[arg.Key] = arg.Value
+		} else {
+			argsMap[arg.Key] = value
+		}
 	}
 
 	for _, output := range state.Outputs {
@@ -98,7 +107,7 @@ func (h *Handler) HandleExecutionStep(message []byte) {
 		isArgs := argsMatcher.MatchString(key)
 		existMapping := true
 		if isArgs {
-			argKey := strings.Replace(key, "args.", "", 1)
+			argKey := strings.Replace(key, "$args.", "", 1)
 			result, ok := argsMap[argKey]
 			if !ok {
 				existMapping = false
@@ -133,6 +142,7 @@ func (h *Handler) HandleExecutionStep(message []byte) {
 		return
 	}
 
+	log.Printf("Sending message: %s\n", message)
 	err = ProduceTopicMessage(h.serviceWriter, message, config.Topic)
 	if err != nil {
 		state.Status = repository.FAILED
