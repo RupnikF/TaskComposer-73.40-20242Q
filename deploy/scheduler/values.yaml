@@ -131,3 +131,10 @@ steps_kafka_topic:
 kafka_host:
 kafka_port:
 redis_host:
+submissions_topic: 
+steps_topic:
+native_host: 
+native_port:
+native_topic: 
+native_output_topic: 
+service_host:

@@ -82,6 +82,8 @@ spec:
               value: {{ .Values.native_topic }}
             - name: "NATIVE_OUTPUT_TOPIC"
               value: {{ .Values.native_output_topic }}
+            - name: "SERVICE_HOST"
+              value: {{ .Values.service_host }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
