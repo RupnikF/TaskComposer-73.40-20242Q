@@ -58,6 +58,10 @@ spec:
                   name: {{ .Release.Name }}-db-auth
             - name: "POSTGRES_HOST"
               value: {{ .Values.workflows_db_host }}
+            - name: "KAFKA_HOST"
+              value: {{ .Values.submission_kafka_host }}
+            - name: "KAFKA_TOPIC"
+              value: {{ .Values.submission_kafka_topic }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

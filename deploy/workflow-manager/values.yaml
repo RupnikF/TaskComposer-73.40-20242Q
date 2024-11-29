@@ -126,3 +126,5 @@ workflows_db_host:
 workflows_db_user:
 workflows_db_pass:
 workflows_db_db:
+submission_kafka_topic:
+submission_kafka_host:

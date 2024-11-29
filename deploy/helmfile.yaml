@@ -3,6 +3,34 @@ repositories:
     url: https://charts.bitnami.com/bitnami
 
 releases:
+  # Scheduler
+  - name: scheduler-broker
+    namespace: scheduler
+    chart: bitnami/kafka
+    version: 31.0.0
+    values:
+      - kraft:
+          clusterId: "1"
+      - broker:
+          replicaCount: 0
+      - controller:
+          replicaCount: 1
+          controllerOnly: false
+      - kraft:
+          enabled: true
+      - listeners:
+          client:
+            containerPort: 9092
+            protocol: PLAINTEXT
+            name: BROKER
+          controller:
+            containerPort: 9093
+            protocol: PLAINTEXT
+            name: CONTROLLER
+      - provisioning:
+          numPartitions: 1
+          replicationFactor: 1
+
   # Workflow Manager
   - name: wf-db
     namespace: workflow-manager
@@ -28,3 +56,5 @@ releases:
       - workflows_db_user: {{ requiredEnv "WORKFLOWS_POSTGRES_USER" }}
       - workflows_db_pass: {{ requiredEnv "WORKFLOWS_POSTGRES_PASSWORD" }}
       - workflows_db_db: {{ requiredEnv "WORKFLOWS_POSTGRES_DB" }}
+      - submission_kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
+      - submission_kafka_topic: "execution_submissions"
