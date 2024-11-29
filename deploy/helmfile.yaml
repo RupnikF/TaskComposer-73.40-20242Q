@@ -94,18 +94,6 @@ releases:
       - workflows_db_db: {{ requiredEnv "WORKFLOWS_POSTGRES_DB" }}
       - submission_kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
       - submission_kafka_topic: "execution_submissions"
-      - ingress:
-          enabled: true
-          className: nginx
-          annotations:
-            # Reference: https://kubernetes.github.io/ingress-nginx/examples/rewrite/
-            nginx.ingress.kubernetes.io/use-regex: "true"
-            nginx.ingress.kubernetes.io/rewrite-target: /$2
-          hosts:
-            - host: wfmanager.local
-              paths:
-                - path: /workflows(/|$)(.*)
-                  pathType: ImplementationSpecific
   # native-service
   - name: native-service
     namespace: native-service

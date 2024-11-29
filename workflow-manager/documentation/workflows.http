@@ -1,5 +1,5 @@
 ###
-POST http://localhost:8080/workflows
+POST http://localhost:8081/workflows
 Content-Type: application/yaml
 
 name: "C workflow"
@@ -37,3 +37,5 @@ Content-Type: application/json
 
 GET http://localhost:8080/healthcheck
 
+###
+GET http://localhost:8080/executions/1
