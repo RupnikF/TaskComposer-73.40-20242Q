@@ -5,6 +5,7 @@ import (
 	"os"
 	"scheduler/broker"
 	"scheduler/repository"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -31,6 +32,24 @@ func main() {
 		c.JSON(200, gin.H{
 			"message": "pong",
 		})
+	})
+	r.GET("/executions/:id", func(c *gin.Context) {
+		stringId := c.Param("id")
+		id, err := strconv.ParseUint(stringId, 10, 64)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"error": "invalid id",
+			})
+			return
+		}
+		state := executionRepository.GetStateByExecutionID(uint(id))
+		if state == nil {
+			c.JSON(404, gin.H{
+				"error": "execution not found",
+			})
+			return
+		}
+		c.JSON(200, state.ToResponseStateDTO())
 	})
 
 	kafkaHost := []string{os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")}

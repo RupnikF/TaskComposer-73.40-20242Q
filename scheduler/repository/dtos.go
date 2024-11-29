@@ -90,3 +90,9 @@ type ExecutionStepDTO struct {
 	ExecutionID uint              `json:"execution_id"`
 	StepOrder   int               `json:"step_order"`
 }
+
+type ExecutionStateResponseDTO struct {
+	Step    string                 `json:"step"`
+	Status  string                 `json:"status"`
+	Outputs map[string]interface{} `json:"outputs"`
+}

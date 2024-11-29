@@ -62,6 +62,17 @@ func (s *Step) ToExecutionStepDTO() ExecutionStepDTO {
 		StepOrder:   s.StepOrder,
 	}
 }
+func (s *State) ToResponseStateDTO() ExecutionStateResponseDTO {
+	outputs := make(map[string]interface{})
+	for _, o := range s.Outputs {
+		outputs[o.Key] = o.Value
+	}
+	return ExecutionStateResponseDTO{
+		Step:    s.Step,
+		Status:  s.Status,
+		Outputs: outputs,
+	}
+}
 
 type State struct {
 	gorm.Model
