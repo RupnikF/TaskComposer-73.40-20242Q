@@ -1,0 +1,104 @@
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
+releases:
+  # Scheduler
+  - name: sch-db
+    namespace: scheduler
+    chart: bitnami/postgresql
+    version: 16.2.2
+    values:
+      - auth:
+          database: {{ requiredEnv "SCHEDULER_POSTGRES_DB" }}
+          username: {{ requiredEnv "SCHEDULER_POSTGRES_USER" }}
+          password: {{ requiredEnv "SCHEDULER_POSTGRES_PASSWORD" }}
+      - persistence:
+          size: 8Gi
+      - replication:
+          enabled: false
+      - metrics:
+          enabled: false # No se si queremos esto
+  - name: scheduler-broker
+    namespace: scheduler
+    chart: bitnami/kafka
+    version: 31.0.0
+    values:
+      - kraft:
+          clusterId: "1"
+      - broker:
+          replicaCount: 0
+      - controller:
+          replicaCount: 1
+          controllerOnly: false
+      - kraft:
+          enabled: true
+      - listeners:
+          client:
+            containerPort: 9092
+            protocol: PLAINTEXT
+            name: BROKER
+          controller:
+            containerPort: 9093
+            protocol: PLAINTEXT
+            name: CONTROLLER
+      - provisioning:
+          numPartitions: 1
+          replicationFactor: 1
+  - name: scheduler
+    namespace: scheduler
+    chart: ./scheduler
+    values:
+      - scheduler_db_host: "sch-db-postgresql"
+      - scheduler_db_user: {{ requiredEnv "SCHEDULER_POSTGRES_USER" }}
+      - scheduler_db_pass: {{ requiredEnv "SCHEDULER_POSTGRES_PASSWORD" }}
+      - scheduler_db_db: {{ requiredEnv "SCHEDULER_POSTGRES_DB" }}
+      - kafka_host: "scheduler-broker-kafka"
+      - kafka_port: "9092"
+      - submission_kafka_topic: "execution_submissions"
+      - steps_kafka_topic: "execution_steps"
+      - redis_host: "localhost"
+      - submissions_topic: "execution_submissions"
+      - steps_topic: "execution_steps"
+      - native_host: "scheduler-broker-kafka"
+      - native_port: "9092"
+      - native_topic: "native_tasks"
+      - native_output_topic: "native_task_output"
+
+  # Workflow Manager
+  - name: wf-db
+    namespace: workflow-manager
+    chart: bitnami/postgresql
+    version: 16.2.2
+    values:
+      - auth:
+          database: {{ requiredEnv "WORKFLOWS_POSTGRES_DB" }}
+          username: {{ requiredEnv "WORKFLOWS_POSTGRES_USER" }}
+          password: {{ requiredEnv "WORKFLOWS_POSTGRES_PASSWORD" }}
+
+      - persistence:
+          size: 8Gi
+      - replication:
+          enabled: false
+      - metrics:
+          enabled: false # No se si queremos esto
+  - name: workflow-manager
+    namespace: workflow-manager
+    chart: ./workflow-manager
+    values:
+      - workflows_db_host: "wf-db-postgresql"
+      - workflows_db_user: {{ requiredEnv "WORKFLOWS_POSTGRES_USER" }}
+      - workflows_db_pass: {{ requiredEnv "WORKFLOWS_POSTGRES_PASSWORD" }}
+      - workflows_db_db: {{ requiredEnv "WORKFLOWS_POSTGRES_DB" }}
+      - submission_kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
+      - submission_kafka_topic: "execution_submissions"
+  
+  # native-service
+  - name: native-service
+    namespace: native-service
+    chart: ./native-service
+    values:
+      - kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
+      - kafka_port: "9092"
+      - input_topic: "native_tasks"
+      - output_topic: "native_task_output"

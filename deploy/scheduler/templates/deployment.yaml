@@ -61,13 +61,27 @@ spec:
             - name: "KAFKA_HOST"
               value: {{ .Values.kafka_host }}
             - name: "KAFKA_PORT"
-              value: {{ .Values.kafka_port }}
+              value: {{ .Values.kafka_port | quote }}
             - name: "SUBMISSIONS_TOPIC"
               value: {{ .Values.submission_kafka_topic }}
             - name: "STEPS_TOPIC"
               value: {{ .Values.steps_kafka_topic }}
             - name: "REDIS_HOST"
               value: {{ .Values.redis_host }}
+            - name: "ENV_MODE"
+              value: "production"
+            - name: "SUBMISSIONS_TOPIC"
+              value: {{ .Values.submissions_topic }}
+            - name: "STEPS_TOPIC"
+              value: {{ .Values.steps_topic }}
+            - name: "NATIVE_HOST"
+              value: {{ .Values.native_host }}
+            - name: "NATIVE_PORT"
+              value: {{ .Values.native_port | quote }}
+            - name: "NATIVE_TOPIC"
+              value: {{ .Values.native_topic }}
+            - name: "NATIVE_OUTPUT_TOPIC"
+              value: {{ .Values.native_output_topic }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

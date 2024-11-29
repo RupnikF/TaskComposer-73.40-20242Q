@@ -131,4 +131,3 @@ steps_kafka_topic:
 kafka_host:
 kafka_port:
 redis_host:
-

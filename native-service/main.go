@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"log"
+	"net/http"
+	"os"
+
 	"github.com/joho/godotenv"
 	kafka "github.com/segmentio/kafka-go"
-	"log"
-	"os"
-	"sync"
 )
 
 //TIP <p>To run your code, right-click the code and select <b>Run</b>.</p> <p>Alternatively, click
@@ -27,9 +28,6 @@ type EchoRequest struct {
 func main() {
 	//TIP <p>Press <shortcut actionId="ShowIntentionActions"/> when your caret is at the underlined text
 	// to see how GoLand suggests fixing the warning.</p><p>Alternatively, if available, click the lightbulb to view possible fixes.</p>
-	var wg sync.WaitGroup
-
-	wg.Add(1)
 
 	EnvMode := os.Getenv("ENV_MODE")
 	if EnvMode == "development" || EnvMode == "" {
@@ -52,6 +50,7 @@ func main() {
 		Topic:    os.Getenv("OUTPUT_TOPIC"),
 	})
 
+	log.Print("Listening on topic: " + os.Getenv("INPUT_TOPIC"))
 	go func() {
 		for {
 			msg, err := reader.ReadMessage(context.Background())
@@ -102,10 +101,20 @@ func main() {
 						continue
 					}
 					err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg})
+					if err != nil {
+						log.Printf("Error writing final response: %v", err)
+					}
 				}
 			}
 		}
 	}()
 
-	wg.Wait()
+	log.Print("Server started on port 8080")
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello, World!"))
+	})
+
+	err := http.ListenAndServe(":8080", nil)
+
+	log.Printf("Error starting server: %v", err.Error())
 }

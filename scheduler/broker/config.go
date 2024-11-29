@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"log"
 	"net"
 	"os"
 	"strconv"
@@ -98,6 +99,6 @@ func Initialize() {
 
 	err = controllerConn.CreateTopics(topicConfigs...)
 	if err != nil {
-		panic(err.Error())
+		log.Printf("Error creating topics, %s", err.Error())
 	}
 }
