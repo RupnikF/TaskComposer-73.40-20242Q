@@ -9,13 +9,13 @@ import (
 )
 
 func GetExecutionReader() *kafka.Reader {
-	bootstrapServers := os.Getenv("KAFKA_HOST") + ":9092"
+	bootstrapServers := os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")
 	topic := GetExecutionKafkaTopic()
 	return GetReader([]string{bootstrapServers}, topic, "submissions")
 }
 
 func GetStepReader() *kafka.Reader {
-	bootstrapServers := os.Getenv("KAFKA_HOST") + ":9092"
+	bootstrapServers := os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")
 	topic := GetStepKafkaTopic()
 	return GetReader([]string{bootstrapServers}, topic, "steps")
 }
@@ -54,7 +54,7 @@ func GetStepKafkaTopic() string {
 
 func Initialize() {
 
-	bootstrapServers := os.Getenv("KAFKA_HOST") + ":9092"
+	bootstrapServers := os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")
 
 	conn, err := kafka.Dial("tcp", bootstrapServers)
 	if err != nil {

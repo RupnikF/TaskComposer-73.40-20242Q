@@ -33,7 +33,7 @@ func main() {
 		})
 	})
 
-	kafkaHost := []string{os.Getenv("KAFKA_HOST") + ":9092"}
+	kafkaHost := []string{os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")}
 	executionStepsWriter := broker.GetWriter(kafkaHost, broker.GetStepKafkaTopic())
 	serviceWriter := broker.GetGenericWriter(kafkaHost)
 

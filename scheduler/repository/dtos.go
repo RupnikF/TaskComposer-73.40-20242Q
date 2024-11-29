@@ -11,11 +11,13 @@ type SubmisssionStepDTO struct {
 
 func (s *SubmisssionStepDTO) ToStep(stepIndex int) Step {
 	inputs := make([]*KeyValueStep, len(s.Input))
+	i := 0
 	for k, v := range s.Input {
-		inputs = append(inputs, &KeyValueStep{
+		inputs[i] = &KeyValueStep{
 			Key:   k,
 			Value: v,
-		})
+		}
+		i++
 	}
 	return Step{
 		Service:   s.Service,
@@ -42,11 +44,13 @@ func (e ExecutionSubmissionDTO) ToExecution(status string) *Execution {
 	outputs := make([]*KeyValueOutput, 0)
 	arguments := make([]*KeyValueArgument, len(e.Arguments))
 	if e.Arguments != nil {
+		i := 0
 		for k, v := range e.Arguments {
-			arguments = append(arguments, &KeyValueArgument{
+			arguments[i] = &KeyValueArgument{
 				Key:   k,
 				Value: v,
-			})
+			}
+			i++
 		}
 	}
 
