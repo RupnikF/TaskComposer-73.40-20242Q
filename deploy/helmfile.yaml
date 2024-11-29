@@ -29,7 +29,7 @@ releases:
       - kraft:
           clusterId: "1"
       - broker:
-          replicaCount: 0
+          replicaCount: 1
       - controller:
           replicaCount: 1
           controllerOnly: false
@@ -47,6 +47,33 @@ releases:
       - provisioning:
           numPartitions: 1
           replicationFactor: 1
+      - extraEnvVars:
+          - name: KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE
+            value: "true"
+          - name: KAFKA_CFG_NODE_ID
+            value: "1"
+          - name: KAFKA_CFG_PROCESS_ROLES
+            value: "broker,controller"
+          - name: KAFKA_CFG_LISTENERS
+            value: "PLAINTEXT://scheduler-broker:9092,CONTROLLER://scheduler-broker:9093"
+          - name: KAFKA_CFG_ADVERTISED_LISTENERS
+            value: "PLAINTEXT://scheduler-broker:9092"
+          - name: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
+            value: "CONTROLLER"
+          - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
+            value: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+          - name: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
+            value: "1@scheduler-broker:9093"
+          - name: KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR
+            value: "1"
+          - name: KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+            value: "1"
+          - name: KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR
+            value: "1"
+          - name: KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS
+            value: "0"
+          - name: KAFKA_CFG_NUM_PARTITIONS
+            value: "3"
   - name: scheduler
     namespace: scheduler
     chart: ./scheduler
