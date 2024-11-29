@@ -4,6 +4,21 @@ repositories:
 
 releases:
   # Scheduler
+  - name: sch-db
+    namespace: workflow-manager
+    chart: bitnami/postgresql
+    version: 16.2.2
+    values:
+      - auth:
+          database: { { requiredEnv "SCHEDULER_POSTGRES_DB" } }
+          username: { { requiredEnv "SCHEDULER_POSTGRES_USER" } }
+          password: { { requiredEnv "SCHEDULER_POSTGRES_PASSWORD" } }
+      - persistence:
+          size: 8Gi
+      - replication:
+          enabled: false
+      - metrics:
+          enabled: false # No se si queremos esto
   - name: scheduler-broker
     namespace: scheduler
     chart: bitnami/kafka
@@ -30,6 +45,19 @@ releases:
       - provisioning:
           numPartitions: 1
           replicationFactor: 1
+  - name: scheduler
+    namespace: scheduler
+    chart: ./scheduler
+    values:
+      - scheduler_db_host: "sch-db-postgresql"
+      - scheduler_db_user: { { requiredEnv "SCHEDULER_POSTGRES_USER" } }
+      - scheduler_db_pass: { { requiredEnv "SCHEDULER_POSTGRES_PASSWORD" } }
+      - scheduler_db_db: { { requiredEnv "SCHEDULER_POSTGRES_DB" } }
+      - kafka_host: "scheduler-broker-kafka"
+      - kafka_port: "9092"
+      - submission_kafka_topic: "execution_submissions"
+      - steps_kafka_topic: "execution_steps"
+      - redis_host: "localhost"
 
   # Workflow Manager
   - name: wf-db
