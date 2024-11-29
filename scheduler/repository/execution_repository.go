@@ -23,7 +23,7 @@ func (r *ExecutionRepository) CreateExecution(execution *Execution) uint {
 
 func (r *ExecutionRepository) GetExecutionById(id uint) *Execution {
 	execution := Execution{}
-	tx := r.db.First(&execution, id)
+	tx := r.db.Preload("State").Preload("Steps").Preload("State.Outputs").First(&execution, id)
 	if tx.Error != nil {
 		log.Printf("Failed to get execution: %v", tx.Error)
 	}

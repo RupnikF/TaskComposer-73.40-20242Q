@@ -153,3 +153,59 @@ func (h *Handler) HandleExecutionStep(message []byte) {
 	state.Status = repository.EXECUTING
 	h.executionRepository.UpdateState(state)
 }
+
+type ServiceResponse struct {
+	ExecutionID uint                   `json:"executionId"`
+	Outputs     map[string]interface{} `json:"outputs"`
+}
+
+func (h *Handler) HandleServiceResponse(message []byte) {
+	response := ServiceResponse{}
+	err := json.Unmarshal(message, &response)
+	if err != nil {
+		log.Printf("Failed to unmarshal message: %s\n", err)
+		return
+	}
+
+	execution := h.executionRepository.GetExecutionById(response.ExecutionID)
+	if execution == nil {
+		log.Printf("Execution not found: %d\n", response.ExecutionID)
+		return
+	}
+	state := execution.State
+	if response.Outputs["error"] != nil {
+		execution.State.Status = repository.FAILED
+		h.executionRepository.UpdateState(execution.State)
+		log.Printf("Service failed: %s\n", response.Outputs["error"])
+		return
+	}
+	for k, v := range response.Outputs {
+		state.Outputs = append(state.Outputs, &repository.KeyValueOutput{Key: k, Value: v.(string)})
+	}
+	//Check if all steps are done
+	var nextStepIndex int
+	for _, step := range execution.Steps {
+		if step.Name == state.Step {
+			nextStepIndex = step.StepOrder + 1
+			break
+		}
+	}
+	if nextStepIndex >= len(execution.Steps) {
+		state.Status = repository.SUCCESS
+	} else {
+		state.Step = execution.Steps[nextStepIndex].Name
+		state.Status = repository.PENDING
+		stepToExecute := execution.Steps[nextStepIndex].ToExecutionStepDTO()
+
+		//Enqueue the step
+		bytes, err := json.Marshal(stepToExecute)
+		if err != nil {
+			log.Printf("Failed to marshal message: %s\n", err)
+		}
+		err = ProduceMessage(h.executionStepsWriter, bytes)
+		if err != nil {
+			log.Printf("Failed to produce message: %s\n", err)
+		}
+	}
+	h.executionRepository.UpdateState(state)
+}

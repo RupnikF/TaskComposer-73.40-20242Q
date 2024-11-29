@@ -54,7 +54,14 @@ func main() {
 		-1,
 		handler.HandleExecutionStep,
 	)
-
+	serviceHost := os.Getenv("SERVICE_HOST") + ":" + os.Getenv("NATIVE_PORT")
+	nativeTopic := os.Getenv("NATIVE_OUTPUT_TOPIC")
+	nativeServiceReader := broker.GetReader([]string{serviceHost}, nativeTopic, "native-service")
+	go broker.ConsumeMessageWithHandler(
+		nativeServiceReader,
+		-1,
+		handler.HandleServiceResponse,
+	)
 	err := r.Run()
 	if err != nil {
 		return
