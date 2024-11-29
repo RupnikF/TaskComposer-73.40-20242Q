@@ -89,6 +89,11 @@ func Initialize() {
 			NumPartitions:     1,
 			ReplicationFactor: 1,
 		},
+		{
+			Topic:             os.Getenv("NATIVE_OUTPUT_TOPIC"),
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		},
 	}
 
 	err = controllerConn.CreateTopics(topicConfigs...)

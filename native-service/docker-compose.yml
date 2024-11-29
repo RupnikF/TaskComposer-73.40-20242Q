@@ -1,0 +1,13 @@
+services:
+  native:
+    build: .
+    env_file:
+      - .env.docker
+    environment:
+      - ENV_MODE=production
+    networks:
+      - scheduler_bus-network
+
+networks:
+  scheduler_bus-network:
+    external: true
