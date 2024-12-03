@@ -29,12 +29,13 @@ func (s *SubmisssionStepDTO) ToStep(stepIndex int) Step {
 }
 
 type ExecutionSubmissionDTO struct {
-	WorkflowName string               `json:"workflowName"`
-	WorkflowID   uint                 `json:"workflowID"`
-	Tags         []string             `json:"tags"`
-	Parameters   map[string]string    `json:"parameters"`
-	Arguments    map[string]string    `json:"args"`
-	Steps        []SubmisssionStepDTO `json:"steps"`
+	WorkflowName  string               `json:"workflowName"`
+	WorkflowID    uint                 `json:"workflowID"`
+	ExecutionUUID string               `json:"ExecutionUUID"`
+	Tags          []string             `json:"tags"`
+	Parameters    map[string]string    `json:"parameters"`
+	Arguments     map[string]string    `json:"args"`
+	Steps         []SubmisssionStepDTO `json:"steps"`
 }
 
 func (e ExecutionSubmissionDTO) ToExecution(status string) *Execution {
@@ -76,9 +77,10 @@ func (e ExecutionSubmissionDTO) ToExecution(status string) *Execution {
 	return &Execution{
 		WorkflowID: e.WorkflowID,
 		// Tags:       e.Tags,
-		Params: &params,
-		Steps:  steps,
-		State:  &state,
+		Params:        &params,
+		Steps:         steps,
+		State:         &state,
+		ExecutionUUID: e.ExecutionUUID,
 	}
 }
 

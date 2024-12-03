@@ -85,7 +85,8 @@ type State struct {
 
 type Execution struct {
 	gorm.Model
-	WorkflowID uint
+	WorkflowID    uint
+	ExecutionUUID string `gorm:"type:varchar(64)"`
 	// Tags       []string `gorm:"type:varchar(64)[]" json:"tags"`
 	State  *State
 	Steps  []*Step

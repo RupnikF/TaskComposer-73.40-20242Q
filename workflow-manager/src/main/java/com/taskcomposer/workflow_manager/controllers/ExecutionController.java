@@ -35,7 +35,7 @@ public class ExecutionController {
             return ResponseEntity.badRequest().body("Workflow not found");
         }
         Workflow workflow = workflowOptional.get();
-        executionService.executeWorkflow(workflow, body.getTags(), body.getParameters(), body.getArgs());
-        return ResponseEntity.ok().build();
+        String  executionUUID = executionService.executeWorkflow(workflow, body.getTags(), body.getParameters(), body.getArgs());
+        return ResponseEntity.ok(executionUUID);
     }
 }

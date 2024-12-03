@@ -1,14 +1,12 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"scheduler/broker"
 	"scheduler/repository"
-	"strconv"
-
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -33,16 +31,9 @@ func main() {
 			"message": "pong",
 		})
 	})
-	r.GET("/executions/:id", func(c *gin.Context) {
-		stringId := c.Param("id")
-		id, err := strconv.ParseUint(stringId, 10, 64)
-		if err != nil {
-			c.JSON(400, gin.H{
-				"error": "invalid id",
-			})
-			return
-		}
-		state := executionRepository.GetStateByExecutionID(uint(id))
+	r.GET("/executions/:uuid", func(c *gin.Context) {
+		stringUUID := c.Param("uuid")
+		state := executionRepository.GetExecutionByUUID(stringUUID).State
 		if state == nil {
 			c.JSON(404, gin.H{
 				"error": "execution not found",

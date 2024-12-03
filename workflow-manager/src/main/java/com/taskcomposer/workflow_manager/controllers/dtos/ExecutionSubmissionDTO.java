@@ -5,11 +5,13 @@ import lombok.Getter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Getter
 public class ExecutionSubmissionDTO {
     private String workflowName;
     private Long workflowID;
+    private String ExecutionUUID;
     private List<String> tags;
     private Map<String, String> parameters;
     private Map<String, String> args;
@@ -22,5 +24,6 @@ public class ExecutionSubmissionDTO {
         this.parameters = parameters;
         this.steps = workflow.getSteps().stream().map(StepDTO::fromStep).toList();
         this.args = args;
+        this.ExecutionUUID = UUID.randomUUID().toString();
     }
 }

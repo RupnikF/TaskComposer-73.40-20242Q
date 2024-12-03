@@ -29,6 +29,14 @@ func (r *ExecutionRepository) GetExecutionById(id uint) *Execution {
 	}
 	return &execution
 }
+func (r *ExecutionRepository) GetExecutionByUUID(uuid string) *Execution {
+	execution := Execution{}
+	tx := r.db.Preload("State").Preload("Steps").Preload("State.Outputs").Where("execution_uuid = ?", uuid).First(&execution)
+	if tx.Error != nil {
+		log.Printf("Failed to get execution: %v", tx.Error)
+	}
+	return &execution
+}
 
 func (r *ExecutionRepository) UpdateState(state *State) {
 	tx := r.db.Save(state)

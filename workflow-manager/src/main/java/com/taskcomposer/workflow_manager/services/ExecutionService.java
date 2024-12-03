@@ -26,7 +26,7 @@ public class ExecutionService {
         this.kafkaTemplate = kafkaTemplate;
     }
 //
-    public void executeWorkflow(Workflow workflow, List<String> tags, Map<String, String> parameters, Map<String, String> args) {
+    public String executeWorkflow(Workflow workflow, List<String> tags, Map<String, String> parameters, Map<String, String> args) {
         ExecutionSubmissionDTO submissionDTO = new ExecutionSubmissionDTO(workflow, tags, parameters, args);
         // TODO: send submissionDTO to queue of submissions
         log.info(kafkaTopic);
@@ -37,6 +37,7 @@ public class ExecutionService {
         } catch (InterruptedException | TimeoutException | ExecutionException e) {
             log.warning(e.getMessage());
         }
+        return submissionDTO.getExecutionUUID();
     }
 //
 //    @KafkaListener(topics = "executions", groupId = "pepe")
