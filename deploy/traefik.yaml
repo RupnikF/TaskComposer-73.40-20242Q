@@ -1,0 +1,48 @@
+deployment:
+  replicas: 1
+
+service:
+  type: NodePort
+  nodePorts:
+    http: 32080
+    https: 32443
+
+ports:
+  web:
+    port: 80
+    nodePort: 32080
+    exposePort: 32080
+
+  websecure:
+    port: 443
+    nodePort: 32443
+    exposePort: 32443
+
+ingressRoute:
+  dashboard:
+    enabled: true
+    insecure: true
+    entryPoints:
+      - web
+    routes:
+      - match: Host(`dashboard.local`)
+        kind: Rule
+        services:
+          - name: api@internal
+            port: 80
+
+providers:
+  kubernetesIngress:
+    enabled: true
+    ingressClass: "traefik"  # This ensures that Traefik picks up Ingress resources annotated with "traefik"
+
+
+additionalArguments:
+  - "--api.insecure=true"       # Enable the dashboard without authentication
+  - "--api.dashboard=true"
+  - "--entrypoints.web.address=:80"
+  - "--entrypoints.websecure.address=:443"
+
+resources: {}
+persistence:
+  enabled: false

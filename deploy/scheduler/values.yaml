@@ -36,7 +36,9 @@ serviceAccount:
 podAnnotations: {}
 # This is for setting Kubernetes Labels to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+
 podLabels: {}
+  
 
 podSecurityContext: {}
   # fsGroup: 2000
@@ -58,20 +60,21 @@ service:
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  enabled: true
+  annotations: {
+    kubernetes.io/ingress.class: "traefik" 
+  }
   hosts:
-    - host: chart-example.local
+    - host: scheduler.local
       paths:
         - path: /
-          pathType: ImplementationSpecific
+          pathType: Prefix
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
+
+
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
