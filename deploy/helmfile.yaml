@@ -108,3 +108,8 @@ releases:
       - kafka_port: "9092"
       - input_topic: "native_tasks"
       - output_topic: "native_task_output"
+  - name: traefik
+    namespace: default
+    chart: traefik/traefik
+    values:
+      - traefik.yaml
