@@ -57,7 +57,6 @@ service:
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 8080
 
-# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
   enabled: false
   className: ""
@@ -70,6 +69,30 @@ ingress:
         - path: /
           pathType: ImplementationSpecific
   tls: []
+
+# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+# ingress:
+#   enabled: true
+#   annotations: 
+#     kubernetes.io/ingress.class: "traefik" 
+  
+#   hosts:
+#     - host: taskcomposer.local
+#       paths:
+#         - path: /workflows
+#           pathType: Prefix
+#           backend:
+#             service:
+#               name: workflow-manager
+#               port:
+#                 number: 8080
+#         - path: /executions
+#           pathType: Prefix
+#           backend:
+#             service:
+#               name: workflow-manager
+#               port:
+#                 number: 8080
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local

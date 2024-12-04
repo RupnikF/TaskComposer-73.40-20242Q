@@ -42,6 +42,7 @@ additionalArguments:
   - "--api.dashboard=true"
   - "--entrypoints.web.address=:80"
   - "--entrypoints.websecure.address=:443"
+  - "--providers.kubernetescrd.allowCrossNamespace=true"
 
 resources: {}
 persistence:

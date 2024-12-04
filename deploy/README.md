@@ -26,5 +26,16 @@ kubectl delete all --all -n namespace-name (borra TODO lo que exista en el clust
 export POD_NAME=$(kubectl get pods --namespace workflow-manager -l "app.kubernetes.io/name=workflow-manager,app.kubernetes.io/instance=workflow-manager" -o jsonpath="{.items[0].metadata.name}")
 export CONTAINER_PORT=$(kubectl get pod --namespace workflow-manager $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
 kubectl --namespace workflow-manager port-forward $POD_NAME 8080:$CONTAINER_PORT
-```
 
+# Para levantar el traefik
+helm install -f traefik.yaml default traefik/traefik
+
+# Para agregar el host a /etc/hosts
+echo "$(minikube ip) workflow-manager.local" | sudo tee -a /etc/hosts
+echo "$(minikube ip) dashboard.local" | sudo tee -a /etc/hosts
+
+
+# El endpoint a usar es workflow-manager.local:32080, por lo menos para uso local
+# El endpoint de dashboard es dashboard.local:32080/dashboard para visualizar
+
+```

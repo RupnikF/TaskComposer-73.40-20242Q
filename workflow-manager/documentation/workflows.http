@@ -1,5 +1,5 @@
 ###
-POST http://localhost:8081/workflows
+POST http://workflow-manager.local:32080/workflows
 Content-Type: application/yaml
 
 name: "C workflow"
@@ -20,7 +20,7 @@ steps:
 GET http://localhost:8080/workflows
 
 ###
-POST http://localhost:8081/executions
+POST http://workflow-manager.local:32080/executions
 Content-Type: application/json
 
 {
