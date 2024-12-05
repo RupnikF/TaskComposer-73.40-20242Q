@@ -11,6 +11,9 @@ Los charts de helm se pueden conseguir en: https://artifacthub.io/
 # Inicialmente...
 minikube start # yo este lo tengo q correr cada vez q prendo la pc
 helmfile init # Poner 'y' a todo. Este lo corres una vez en la vida nomas
+# Install Traefik Resource Definitions:
+kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v2.10/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml
+
 export $(cat .env | xargs) && helmfile apply # Este es para aplicar los cambios en helmfile.yaml
 helmfile destroy # Este es para borrar todo (idem terraform)
 ```
