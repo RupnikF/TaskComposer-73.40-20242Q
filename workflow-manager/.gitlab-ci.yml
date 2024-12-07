@@ -3,3 +3,4 @@ include:
     inputs:
       microservice-name: 'workflow-manager'
       directory-name: 'workflow-manager'
+      environment: 'dev'

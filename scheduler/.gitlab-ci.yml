@@ -3,3 +3,4 @@ include:
     inputs:
       microservice-name: 'scheduler'
       directory-name: 'scheduler'
+      environment: 'dev'

@@ -4,6 +4,8 @@ spec:
       type: string
     directory-name:
       type: string
+    environment:
+      type: string
 
 ---
 
@@ -31,8 +33,14 @@ install-dependencies:
 
 build-images:
   stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [ "" ] # EntryPoint needs to be overridden because it's a shell otherwise
   script:
-  - echo "Building images"
+    - /kaniko/executor
+      --dockerfile "${CI_PROJECT_DIR}$[[ inputs.directory-name ]]/Dockerfile"
+      --context "${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]"
+      --destination "${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$$[[ inputs.environment ]]-${BUILD_ID}"
   needs:
   - job: install-dependencies
     artifacts: true

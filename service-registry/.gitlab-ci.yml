@@ -3,3 +3,4 @@ include:
     inputs:
       microservice-name: 'service-registry'
       directory-name: 'service-registry'
+      environment: 'dev'
