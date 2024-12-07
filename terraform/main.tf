@@ -3,6 +3,26 @@ provider "aws" {
   profile = var.profile
 }
 
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+
+data "aws_iam_role" "lab_role" {
+  name = "LabRole"
+}
+
+resource "aws_iam_instance_profile" "lab_instance_profile" {
+  name = "lab-instance-profile"
+  role = data.aws_iam_role.lab_role.name
+}
+
 resource "aws_key_pair" "node-key" {
   key_name   = "cluster-keypair"
   public_key = file(local.key_file_name)
@@ -16,10 +36,12 @@ resource "aws_instance" "master" {
   user_data_base64 = base64encode("${templatefile("scripts/initMaster.sh", {
     KUBERNETES_VERSION = "1.29.0-1.1",
     CRIO_OS            = "xUbuntu_22.04",
-    CRIO_VERSION       = "1.28",
+    CRIO_VERSION       = "1.27", #volver a poner 1.28 cuando se descaiga
     NODE_NAME          = "master",
     POD_NETWORK_CIDR   = "192.168.0.0/16"
   })}")
+
+  iam_instance_profile = aws_iam_instance_profile.lab_instance_profile.name
 
   tags = {
     Name = "master-node"
@@ -35,7 +57,7 @@ resource "aws_instance" "node" {
   user_data_base64 = base64encode("${templatefile("scripts/initWorker.sh", {
     HOSTNAME           = "worker-node-${count.index + 1}",
     CRIO_OS            = "xUbuntu_22.04",
-    CRIO_VERSION       = "1.28",
+    CRIO_VERSION       = "1.27", #volver a poner 1.28 cuando se descaiga
     KUBERNETES_VERSION = "1.29.0-1.1",
   })}")
 
@@ -62,6 +84,77 @@ resource "aws_security_group" "example" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+# The map here can come from other supported configurations
+# like locals, resource attribute, map() built-in, etc.
+variable "my_secrets" {
+  default = {
+    key1 = "value1"
+    key2 = "value2"
+  }
+  sensitive     = true
+  type = map(string)
+}
+
+resource "aws_secretsmanager_secret" "my_secrets" {
+  name = "my_secrets"
+}
+
+resource "aws_secretsmanager_secret_version" "my_secrets" {
+  secret_id     = aws_secretsmanager_secret.my_secrets.id
+  secret_string = jsonencode(var.my_secrets)
+  
+}
+
+resource "aws_secretsmanager_secret_policy" "secret_policy" {
+  secret_arn = aws_secretsmanager_secret.my_secrets.arn
+  policy     = jsonencode({
+        Version = "2012-10-17",
+        Statement = [
+            {
+                Effect = "Allow",
+                Principal = {
+                    AWS = data.aws_iam_role.lab_role.arn
+                },
+                Action = [
+                    "secretsmanager:GetSecretValue",
+                    "secretsmanager:DescribeSecret"
+                ],
+                Resource = aws_secretsmanager_secret.my_secrets.arn
+            }
+        ]
+    })
+}
+
+resource "aws_vpc_endpoint" "secrets_manager" {
+  vpc_id            = data.aws_vpc.default.id
+  service_name      = "com.amazonaws.${local.region}.secretsmanager"
+  vpc_endpoint_type   = "Interface"
+
+  private_dns_enabled = true
+  subnet_ids         = data.aws_subnets.default.ids
+
+  security_group_ids = [aws_security_group.example.id]
+
+  dns_options {
+    dns_record_ip_type = "ipv4"
+    private_dns_only_for_inbound_resolver_endpoint = true
+  }
+
+  policy = jsonencode({
+      Version = "2012-10-17",
+      Statement = [
+        {
+          Effect = "Allow"
+          Action = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
+          Resource = aws_secretsmanager_secret.my_secrets.arn
+          Principal = {
+              AWS = data.aws_iam_role.lab_role.arn
+          }
+        }
+      ]
+  })
 }
 
 output "ssh_commands_to_worker_nodes" {
