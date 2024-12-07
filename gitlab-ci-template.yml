@@ -40,7 +40,7 @@ build-images:
     - /kaniko/executor
       --dockerfile "${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]/Dockerfile"
       --context "${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]"
-      --destination "${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]-${BUILD_ID}"
+      --destination "${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
   needs:
   - job: install-dependencies
     artifacts: true
