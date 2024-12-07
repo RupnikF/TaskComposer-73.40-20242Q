@@ -38,9 +38,9 @@ build-images:
     entrypoint: [ "" ] # EntryPoint needs to be overridden because it's a shell otherwise
   script:
     - /kaniko/executor
-      --dockerfile "${CI_PROJECT_DIR}$[[ inputs.directory-name ]]/Dockerfile"
+      --dockerfile "${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]/Dockerfile"
       --context "${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]"
-      --destination "${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$$[[ inputs.environment ]]-${BUILD_ID}"
+      --destination "${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]-${BUILD_ID}"
   needs:
   - job: install-dependencies
     artifacts: true
