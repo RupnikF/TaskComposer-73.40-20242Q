@@ -1,7 +1,6 @@
 ## Deploy en k8s con Helm
 Tener ya instalados docker, minikube, kubectl y helm \
 **kubectl**: https://kubernetes.io/docs/tasks/tools/
-**minikube**: https://minikube.sigs.k8s.io/docs/start/
 **helm**: `sudo snap install helm --classic` (https://helm.sh/docs/intro/install/)
 **helmfile**: https://github.com/helmfile/helmfile
 
@@ -9,10 +8,13 @@ Los charts de helm se pueden conseguir en: https://artifacthub.io/
 
 ```
 # Inicialmente...
-minikube start # yo este lo tengo q correr cada vez q prendo la pc
 helmfile init # Poner 'y' a todo. Este lo corres una vez en la vida nomas
+
 # Install Traefik Resource Definitions:
 kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v2.10/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml
+
+echo "<token>" | docker login -u <user> --password-stdin registry.gitlab.com
+export DOCKER_CONFIG_B64=$(cat ~/.docker/config.json | base64)
 
 export $(cat .env | xargs) && helmfile apply # Este es para aplicar los cambios en helmfile.yaml
 helmfile destroy # Este es para borrar todo (idem terraform)

@@ -5,6 +5,7 @@ repositories:
     url: https://traefik.github.io/charts
 
 releases:
+  
   # Scheduler
   - name: sch-db
     namespace: scheduler
@@ -56,6 +57,8 @@ releases:
     namespace: scheduler
     chart: ./scheduler
     values:
+      - image:
+          tag: "dev-"
       - scheduler_db_host: "sch-db-postgresql"
       - scheduler_db_user: {{ requiredEnv "SCHEDULER_POSTGRES_USER" }}
       - scheduler_db_pass: {{ requiredEnv "SCHEDULER_POSTGRES_PASSWORD" }}
@@ -93,6 +96,8 @@ releases:
     namespace: workflow-manager
     chart: ./workflow-manager
     values:
+      - image:
+          tag: "dev-"
       - workflows_db_host: "wf-db-postgresql"
       - workflows_db_user: {{ requiredEnv "WORKFLOWS_POSTGRES_USER" }}
       - workflows_db_pass: {{ requiredEnv "WORKFLOWS_POSTGRES_PASSWORD" }}
@@ -104,6 +109,8 @@ releases:
     namespace: native-service
     chart: ./native-service
     values:
+      - image:
+          tag: "dev-"
       - kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
       - kafka_port: "9092"
       - input_topic: "native_tasks"
@@ -113,3 +120,11 @@ releases:
     chart: traefik/traefik
     values:
       - traefik.yaml
+  - name: registry-secret
+    chart: ./registry-secret
+    values:
+      - dockerconfigjsonb64: {{ requiredEnv "DOCKER_CONFIG_B64" | quote }}
+      - available_namespaces: 
+          - scheduler
+          - workflow-manager
+          - native-service

@@ -43,6 +43,11 @@ resource "aws_instance" "master" {
 
   iam_instance_profile = aws_iam_instance_profile.lab_instance_profile.name
 
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp3"
+  }
+
   tags = {
     Name = "master-node"
   }
@@ -60,6 +65,11 @@ resource "aws_instance" "node" {
     CRIO_VERSION       = "1.27", #volver a poner 1.28 cuando se descaiga
     KUBERNETES_VERSION = "1.29.0-1.1",
   })}")
+
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp3"
+  }
 
 
   tags = {
@@ -88,7 +98,7 @@ resource "aws_security_group" "example" {
 
 # The map here can come from other supported configurations
 # like locals, resource attribute, map() built-in, etc.
-variable "my_secrets" {
+variable "my_secretss" {
   default = {
     key1 = "value1"
     key2 = "value2"
@@ -97,18 +107,18 @@ variable "my_secrets" {
   type = map(string)
 }
 
-resource "aws_secretsmanager_secret" "my_secrets" {
-  name = "my_secrets"
+resource "aws_secretsmanager_secret" "my_secretss" {
+  name = "my_secretss"
 }
 
-resource "aws_secretsmanager_secret_version" "my_secrets" {
-  secret_id     = aws_secretsmanager_secret.my_secrets.id
-  secret_string = jsonencode(var.my_secrets)
+resource "aws_secretsmanager_secret_version" "my_secretss" {
+  secret_id     = aws_secretsmanager_secret.my_secretss.id
+  secret_string = jsonencode(var.my_secretss)
   
 }
 
 resource "aws_secretsmanager_secret_policy" "secret_policy" {
-  secret_arn = aws_secretsmanager_secret.my_secrets.arn
+  secret_arn = aws_secretsmanager_secret.my_secretss.arn
   policy     = jsonencode({
         Version = "2012-10-17",
         Statement = [
@@ -121,7 +131,7 @@ resource "aws_secretsmanager_secret_policy" "secret_policy" {
                     "secretsmanager:GetSecretValue",
                     "secretsmanager:DescribeSecret"
                 ],
-                Resource = aws_secretsmanager_secret.my_secrets.arn
+                Resource = aws_secretsmanager_secret.my_secretss.arn
             }
         ]
     })
@@ -148,7 +158,7 @@ resource "aws_vpc_endpoint" "secrets_manager" {
         {
           Effect = "Allow"
           Action = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
-          Resource = aws_secretsmanager_secret.my_secrets.arn
+          Resource = aws_secretsmanager_secret.my_secretss.arn
           Principal = {
               AWS = data.aws_iam_role.lab_role.arn
           }
