@@ -18,11 +18,14 @@ releases:
           username: {{ requiredEnv "SCHEDULER_POSTGRES_USER" }}
           password: {{ requiredEnv "SCHEDULER_POSTGRES_PASSWORD" }}
       - persistence:
-          size: 8Gi
+          primary:
+            size: "2Gi"
       - replication:
           enabled: false
       - metrics:
           enabled: false # No se si queremos esto
+      - global:
+          defaultStorageClass: "local-path"
   - name: scheduler-broker
     namespace: scheduler
     chart: bitnami/kafka
@@ -35,6 +38,14 @@ releases:
       - controller:
           replicaCount: 1
           controllerOnly: false
+      - global:
+          defaultStorageClass: "local-path"
+      - controller:
+          persistence:
+            size: 2Gi
+      - broker:
+          persistence:
+              size: 2Gi
       - listeners:
           client:
             containerPort: 9092
@@ -59,7 +70,7 @@ releases:
     chart: ./scheduler
     values:
       - image:
-          tag: "dev-"
+          tag: "dev"
       - scheduler_db_host: "sch-db-postgresql"
       - scheduler_db_user: {{ requiredEnv "SCHEDULER_POSTGRES_USER" }}
       - scheduler_db_pass: {{ requiredEnv "SCHEDULER_POSTGRES_PASSWORD" }}
@@ -76,6 +87,20 @@ releases:
       - native_topic: "native_tasks"
       - native_output_topic: "native_task_output"
       - service_host: "scheduler-broker-kafka"
+      - services_file_path: "/data/services.json"
+      - pvc:
+            name: "scheduler-pv"
+            accessMode: "ReadWriteMany"
+            size: "2Gi"
+            label: "nfs-storage"
+      - volumes:
+          - name: "scheduler-pv"
+            persistentVolumeClaim:
+              claimName: "scheduler-pv"
+      - volumeMounts:
+          - name: "scheduler-pv"
+            mountPath: "/data"
+            readOnly: false
 
   # Workflow Manager
   - name: wf-db
@@ -88,17 +113,20 @@ releases:
           username: {{ requiredEnv "WORKFLOWS_POSTGRES_USER" }}
           password: {{ requiredEnv "WORKFLOWS_POSTGRES_PASSWORD" }}
       - persistence:
-          size: 8Gi
+          primary:
+            size: "2Gi"
       - replication:
           enabled: false
       - metrics:
           enabled: false # No se si queremos esto
+      - global:
+          defaultStorageClass: "local-path"
   - name: workflow-manager
     namespace: workflow-manager
     chart: ./workflow-manager
     values:
       - image:
-          tag: "dev-"
+          tag: "dev"
       - workflows_db_host: "wf-db-postgresql"
       - workflows_db_user: {{ requiredEnv "WORKFLOWS_POSTGRES_USER" }}
       - workflows_db_pass: {{ requiredEnv "WORKFLOWS_POSTGRES_PASSWORD" }}
@@ -121,6 +149,16 @@ releases:
     chart: traefik/traefik
     values:
       - traefik.yaml
+  - name: shared-nfs
+    namespace: default
+    chart: ./nfs-pv
+    values:
+      - name: "shared-nfs-pv"
+      - appLabel: "nfs-storage"
+      - storage: "6Gi"
+      - accessMode: "ReadWriteMany"
+      - nfsServer: {{ requiredEnv "NFS_SERVER" }}
+      - nfsPath: "/mnt/nfs"
   - name: registry-secret
     chart: ./registry-secret
     values:
@@ -134,6 +172,17 @@ releases:
     chart: signoz/signoz
     values:
       - installCRDs: true
+      - global:
+          storageClass: "local-path"
+      - clickhouse:
+          persistence:
+            size: 2Gi
   - name: logging-ingress
     namespace: default
     chart: ./signoz-ingress
+  - name: local-storage-provisioner
+    namespace: local-path-storage
+    chart: ./local-path-provisioner
+    values:
+      - storageClass:
+          name: "local-path"

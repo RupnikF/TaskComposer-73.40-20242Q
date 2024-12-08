@@ -54,7 +54,7 @@ resource "aws_instance" "master" {
 }
 
 resource "aws_instance" "node" {
-  count                  = 1
+  count                  = 2
   ami                    = local.ami
   instance_type          = local.instance_type
   key_name               = aws_key_pair.node-key.key_name
@@ -74,6 +74,22 @@ resource "aws_instance" "node" {
 
   tags = {
     Name = "worker-node-${count.index + 1}"
+  }
+}
+resource "aws_instance" "nfs_node" {
+  ami                   = local.ami
+  instance_type         = local.micro_instance_type
+  key_name              = aws_key_pair.node-key.key_name
+  vpc_security_group_ids = [aws_security_group.example.id]
+  user_data_base64 = base64encode("${templatefile("scripts/initNFS.sh",{})}")
+
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp3"
+  }
+
+  tags = {
+        Name = "nfs-node"
   }
 }
 
@@ -98,7 +114,7 @@ resource "aws_security_group" "example" {
 
 # The map here can come from other supported configurations
 # like locals, resource attribute, map() built-in, etc.
-variable "my_secretss" {
+variable "my_secrets" {
   default = {
     key1 = "value1"
     key2 = "value2"
@@ -107,18 +123,18 @@ variable "my_secretss" {
   type = map(string)
 }
 
-resource "aws_secretsmanager_secret" "my_secretss" {
-  name = "my_secretss"
+resource "aws_secretsmanager_secret" "my_secrets" {
+  name = "my_secrets"
 }
 
-resource "aws_secretsmanager_secret_version" "my_secretss" {
-  secret_id     = aws_secretsmanager_secret.my_secretss.id
-  secret_string = jsonencode(var.my_secretss)
+resource "aws_secretsmanager_secret_version" "my_secrets" {
+  secret_id     = aws_secretsmanager_secret.my_secrets.id
+  secret_string = jsonencode(var.my_secrets)
   
 }
 
 resource "aws_secretsmanager_secret_policy" "secret_policy" {
-  secret_arn = aws_secretsmanager_secret.my_secretss.arn
+  secret_arn = aws_secretsmanager_secret.my_secrets.arn
   policy     = jsonencode({
         Version = "2012-10-17",
         Statement = [
@@ -131,7 +147,7 @@ resource "aws_secretsmanager_secret_policy" "secret_policy" {
                     "secretsmanager:GetSecretValue",
                     "secretsmanager:DescribeSecret"
                 ],
-                Resource = aws_secretsmanager_secret.my_secretss.arn
+                Resource = aws_secretsmanager_secret.my_secrets.arn
             }
         ]
     })
@@ -158,7 +174,7 @@ resource "aws_vpc_endpoint" "secrets_manager" {
         {
           Effect = "Allow"
           Action = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
-          Resource = aws_secretsmanager_secret.my_secretss.arn
+          Resource = aws_secretsmanager_secret.my_secrets.arn
           Principal = {
               AWS = data.aws_iam_role.lab_role.arn
           }
@@ -175,4 +191,9 @@ output "ssh_commands_to_worker_nodes" {
 output "ssh_commands_to_master_node" {
   value       = "ssh ubuntu@${aws_instance.master.public_dns}"
   description = "SSH commands to connect to Kubernetes master node"
+}
+
+output "ssh_commands_to_nfs_node" {
+  value = "ssh ubuntu@${aws_instance.nfs_node.public_dns}"
+  description = "SSH commands to connect to NFS node"
 }

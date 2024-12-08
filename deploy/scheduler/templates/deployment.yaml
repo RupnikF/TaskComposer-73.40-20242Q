@@ -88,6 +88,8 @@ spec:
               value: "scheduler"
             - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
               value: "logging-signoz-otel-collector.default.svc.cluster.local:4318"
+            - name: "SERVICES_FILE_PATH"
+              value: {{ .Values.services_file_path }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
