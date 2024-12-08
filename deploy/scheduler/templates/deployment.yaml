@@ -84,6 +84,10 @@ spec:
               value: {{ .Values.native_output_topic }}
             - name: "SERVICE_HOST"
               value: {{ .Values.service_host }}
+            - name: "SERVICE_NAME"
+              value: "scheduler"
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "logging-signoz-otel-collector.default.svc.cluster.local:4318"
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

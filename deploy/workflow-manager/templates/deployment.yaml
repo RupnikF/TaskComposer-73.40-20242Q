@@ -62,6 +62,10 @@ spec:
               value: {{ .Values.submission_kafka_host }}
             - name: "KAFKA_TOPIC"
               value: {{ .Values.submission_kafka_topic }}
+            - name: "OTEL_SERVICE_NAME"
+              value: "workflow-manager"
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "http://logging-signoz-otel-collector.default.svc.cluster.local:4318"
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"gorm.io/gorm"
 	"log"
 )
@@ -13,8 +14,8 @@ func NewExecutionRepository(db *gorm.DB) *ExecutionRepository {
 	return &ExecutionRepository{db}
 }
 
-func (r *ExecutionRepository) CreateExecution(execution *Execution) uint {
-	tx := r.db.Create(execution)
+func (r *ExecutionRepository) CreateExecution(ctx context.Context, execution *Execution) uint {
+	tx := r.db.WithContext(ctx).Create(execution)
 	if tx.Error != nil {
 		log.Printf("Failed to create execution: %v", tx.Error)
 	}
@@ -38,8 +39,8 @@ func (r *ExecutionRepository) GetExecutionByUUID(uuid string) *Execution {
 	return &execution
 }
 
-func (r *ExecutionRepository) UpdateState(state *State) {
-	tx := r.db.Save(state)
+func (r *ExecutionRepository) UpdateState(ctx context.Context, state *State) {
+	tx := r.db.WithContext(ctx).Save(state)
 	if tx.Error != nil {
 		log.Printf("Failed to update execution: %v", tx.Error)
 	}

@@ -16,6 +16,9 @@ kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v2.10/docs/co
 echo "<token>" | docker login -u <user> --password-stdin registry.gitlab.com
 export DOCKER_CONFIG_B64=$(cat ~/.docker/config.json | base64)
 
+#Install Crds
+kubectl apply -f https://raw.githubusercontent.com/Altinity/clickhouse-operator/master/deploy/operator/clickhouse-operator-install-bundle.yaml
+
 export $(cat .env | xargs) && helmfile apply # Este es para aplicar los cambios en helmfile.yaml
 helmfile destroy # Este es para borrar todo (idem terraform)
 ```

@@ -1,13 +1,15 @@
 package broker
 
 import (
-	"log"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"net"
 	"os"
 	"strconv"
 
 	"github.com/segmentio/kafka-go"
 )
+
+var configLogger = otelslog.NewLogger("kafka-consumer")
 
 func GetExecutionReader() *kafka.Reader {
 	bootstrapServers := os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")
@@ -59,20 +61,32 @@ func Initialize() {
 
 	conn, err := kafka.Dial("tcp", bootstrapServers)
 	if err != nil {
+		configLogger.Error("Error connecting to Kafka Servers", err.Error())
 		panic(err.Error())
 	}
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+		}
+	}()
 
 	controller, err := conn.Controller()
 	if err != nil {
+		configLogger.Error("Error creating kafka controller", err.Error())
 		panic(err.Error())
 	}
 	var controllerConn *kafka.Conn
 	controllerConn, err = kafka.Dial("tcp", net.JoinHostPort(controller.Host, strconv.Itoa(controller.Port)))
 	if err != nil {
+		configLogger.Error("Error dialing kafka host port", err.Error())
 		panic(err.Error())
 	}
-	defer controllerConn.Close()
+	defer func(controllerConn *kafka.Conn) {
+		err := controllerConn.Close()
+		if err != nil {
+			// Explicit skip
+		}
+	}(controllerConn)
 
 	topicConfigs := []kafka.TopicConfig{
 		{
@@ -99,6 +113,6 @@ func Initialize() {
 
 	err = controllerConn.CreateTopics(topicConfigs...)
 	if err != nil {
-		log.Printf("Error creating topics, %s", err.Error())
+		configLogger.Error("Error creating topics", err.Error())
 	}
 }

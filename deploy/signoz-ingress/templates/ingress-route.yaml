@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: routes
+  namespace: default
+spec:
+  routes:                          
+  - kind: Rule
+    match: PathPrefix(`/monitoring`) && Host(`workflow-manager.local`)
+    services:                       
+    - kind: Service
+      name: logging-signoz-frontend
+      port: 3301

@@ -1,6 +1,14 @@
 # TaskComposer
 
+## Signoz for Local
+```
+git clone -b main https://github.com/SigNoz/signoz.git && cd signoz/deploy/
 
+docker compose up
+
+Use http://<your-machine-ip>:4318 for the java endpoint and
+<your-machine-ip>:4318 for the go endpoint for OpenTelemetry
+```
 
 ## Getting started
 

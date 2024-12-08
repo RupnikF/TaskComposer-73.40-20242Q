@@ -3,9 +3,10 @@ repositories:
     url: https://charts.bitnami.com/bitnami
   - name: traefik
     url: https://traefik.github.io/charts
+  - name: signoz
+    url: https://charts.signoz.io
 
 releases:
-  
   # Scheduler
   - name: sch-db
     namespace: scheduler
@@ -124,7 +125,15 @@ releases:
     chart: ./registry-secret
     values:
       - dockerconfigjsonb64: {{ requiredEnv "DOCKER_CONFIG_B64" | quote }}
-      - available_namespaces: 
+      - available_namespaces:
           - scheduler
           - workflow-manager
           - native-service
+  - name: logging
+    namespace: default
+    chart: signoz/signoz
+    values:
+      - installCRDs: true
+  - name: logging-ingress
+    namespace: default
+    chart: ./signoz-ingress

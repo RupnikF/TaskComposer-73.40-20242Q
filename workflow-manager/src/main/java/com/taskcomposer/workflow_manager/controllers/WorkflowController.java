@@ -6,6 +6,8 @@ import com.taskcomposer.workflow_manager.services.WorkflowService;
 import com.taskcomposer.workflow_manager.services.exceptions.ServiceNotFoundException;
 import com.taskcomposer.workflow_manager.services.exceptions.TaskNotFoundException;
 import com.taskcomposer.workflow_manager.services.exceptions.WorkflowAlreadyExistsException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +22,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/workflows")
 public class WorkflowController {
-
+    private final Logger log = LogManager.getLogger(WorkflowController.class);
     private final WorkflowService workflowService;
 
     @Autowired
@@ -34,12 +36,15 @@ public class WorkflowController {
     )
     public ResponseEntity<Object> uploadWorkflow(@RequestBody final WorkflowDefinitionDTO body) {
         try {
+            log.info("Uploading workflow of name {}", body.getName());
             Workflow createdWorkflow = workflowService.saveWorkflow(body.toWorkflow());
             URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(createdWorkflow.getId()).toUri();
             return ResponseEntity.created(location).body(createdWorkflow);
         } catch (WorkflowAlreadyExistsException e) {
+            log.warn("Workflow {} already exists", body.getName());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         } catch (ServiceNotFoundException | TaskNotFoundException e) {
+            log.info("Service or task not found");
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -78,6 +83,7 @@ public class WorkflowController {
     public ResponseEntity<Void> deleteWorkflow(@PathVariable(name = "id") final Long id) {
         boolean deleted = workflowService.deleteWorkflowById(id);
         if (deleted) {
+            log.info("Workflow {} deleted", id);
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
@@ -25,6 +26,10 @@ func Initialize() *gorm.DB {
 	err = connection.AutoMigrate(&Execution{}, &State{}, &Step{}, &KeyValueOutput{}, &KeyValueArgument{}, &KeyValueStep{}, &ExecutionParams{})
 	if err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
+	}
+	err = connection.Use(otelgorm.NewPlugin())
+	if err != nil {
+		log.Printf("Failed to install instrumentation: %v", err)
 	}
 	return connection
 }
