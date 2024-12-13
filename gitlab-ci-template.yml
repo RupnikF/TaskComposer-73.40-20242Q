@@ -41,7 +41,7 @@ build-images:
       --dockerfile "${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]/Dockerfile"
       --context "${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]"
       --destination "${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
-      --destination "${IMAGE_BASE}/$[[ inputs.microservice-name ]:$CI_COMMIT_SHORT_SHA"
+      --destination "${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$CI_COMMIT_SHORT_SHA"
       # se pushea tanto el tag de la rama como el tag del commit
   needs:
   - job: install-dependencies
@@ -110,15 +110,16 @@ deliver-to-registry:
     entrypoint: [ "" ] # EntryPoint needs to be overridden because it's a shell otherwise
   script:
     # Pulleamos la imagen para que no se haga el build de nuevo
-    - docker pull "${IMAGE_BASE}/$[[ inputs.microservice-name ]}:$[[ inputs.environment ]}"
+    - export IMAGE_TO_PULL="${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
+    - docker pull "$IMAGE_TO_PULL"
     # Ponemos las credenciales de Dockerhub
     - export DOCKER_HUB_AUTH="$( echo ${DOCKER_HUB_USERNAME}:{$DOCKER_HUB_PASSWORD} | base64)"
     - echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$DOCKER_HUB_AUTH\"}}}" > /kaniko/.docker/config.json
-    - export DOCKERHUB_IMAGE="${DOCKER_HUB_USER}/$[[ inputs.microservice-name ]}:$[[ inputs.environment ]}"
+    - export DOCKERHUB_IMAGE="${DOCKER_HUB_USER}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
     # Re-tag the image for Docker Hub
-    - docker tag "${IMAGE_BASE}/$[[ inputs.microservice-name ]}:$[[ inputs.environment ]}" "$DOCKERHUB_IMAGE"
+    - docker tag "$IMAGE_TO_PULL" "$DOCKERHUB_IMAGE"
     # Push the image to Docker Hub using Kaniko
-    - /kaniko/executor --destination $DOCKERHUB_IMAGE
+    - /kaniko/executor --destination "$DOCKERHUB_IMAGE"
   needs:
   - job: package
     artifacts: true
