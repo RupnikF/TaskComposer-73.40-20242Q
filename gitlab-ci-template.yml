@@ -111,6 +111,7 @@ deliver-to-registry:
   script:
     # Pulleamos la imagen para que no se haga el build de nuevo
     - export IMAGE_TO_PULL="${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
+    - echo "${CI_PASSWORD}" | img login -u "${CI_USERNAME}" --password-stdin
     - img pull "$IMAGE_TO_PULL"
     # Ponemos las credenciales de Dockerhub
     - echo "${DOCKER_HUB_PASSWORD}" | img login -u "${DOCKER_HUB_USERNAME}" --password-stdin
