@@ -106,20 +106,19 @@ package:
 deliver-to-registry:
   stage: release
   image:
-    name: gcr.io/kaniko-project/executor:v1.23.2-debug
-    entrypoint: [ "" ] # EntryPoint needs to be overridden because it's a shell otherwise
+    name: jess/img:v0.5.9
+    entrypoint: [ "" ]
   script:
     # Pulleamos la imagen para que no se haga el build de nuevo
     - export IMAGE_TO_PULL="${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
-    - docker pull "$IMAGE_TO_PULL"
+    - img pull "$IMAGE_TO_PULL"
     # Ponemos las credenciales de Dockerhub
-    - export DOCKER_HUB_AUTH="$( echo ${DOCKER_HUB_USERNAME}:{$DOCKER_HUB_PASSWORD} | base64)"
-    - echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$DOCKER_HUB_AUTH\"}}}" > /kaniko/.docker/config.json
+    - echo "${DOCKER_HUB_PASSWORD}" | img login -u "${DOCKER_HUB_USERNAME}" --password-stdin
     - export DOCKERHUB_IMAGE="${DOCKER_HUB_USER}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
     # Re-tag the image for Docker Hub
-    - docker tag "$IMAGE_TO_PULL" "$DOCKERHUB_IMAGE"
+    - img tag "$IMAGE_TO_PULL" "$DOCKERHUB_IMAGE"
     # Push the image to Docker Hub using Kaniko
-    - /kaniko/executor --destination "$DOCKERHUB_IMAGE"
+    - img push "$DOCKERHUB_IMAGE"
   needs:
   - job: package
     artifacts: true
