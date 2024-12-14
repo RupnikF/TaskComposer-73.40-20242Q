@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -50,7 +51,7 @@ func initTracer() func(context.Context) error {
 		),
 	)
 	if err != nil {
-		log.Printf("Could not set resources: ", err)
+		log.Printf("Could not set resources: %s", err)
 	}
 
 	otel.SetTracerProvider(
@@ -85,6 +86,8 @@ func initLogger() (context.Context, *setupLog.LoggerProvider) {
 }
 
 func main() {
+	HostPort := os.Getenv("HOST_PORT")
+
 	ctx, lp := initLogger()
 	defer lp.Shutdown(ctx)
 
@@ -104,6 +107,8 @@ func main() {
 		}
 	}
 
+	init := otelslog.NewLogger("init")
+
 	// Initialize the repository and broker
 	executionRepository := repository.NewExecutionRepository(repository.Initialize())
 	serviceRepository := repository.NewServiceRepository()
@@ -116,6 +121,7 @@ func main() {
 			"message": "pong",
 		})
 	})
+
 	r.GET("/executions/:uuid", func(c *gin.Context) {
 		stringUUID := c.Param("uuid")
 		state := executionRepository.GetExecutionByUUID(stringUUID).State
@@ -157,7 +163,9 @@ func main() {
 		-1,
 		handler.HandleServiceResponse,
 	)
-	err := r.Run()
+
+	init.Info("Running at ", HostPort)
+	err := r.Run(HostPort)
 	if err != nil {
 		return
 	} // listen and serve on 0.0.0.0:8080

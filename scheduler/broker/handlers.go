@@ -3,15 +3,16 @@ package broker
 import (
 	"context"
 	"fmt"
+	"log"
+	"regexp"
+	"scheduler/repository"
+	"strings"
+
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
-	"log"
-	"regexp"
-	"scheduler/repository"
-	"strings"
 
 	"github.com/goccy/go-json"
 	kafka "github.com/segmentio/kafka-go"
@@ -51,14 +52,14 @@ func (h *Handler) HandleExecutionSubmission(message []byte, header []kafka.Heade
 	submission := repository.ExecutionSubmissionDTO{}
 	err := json.Unmarshal(message, &submission)
 	if err != nil {
-		handlerLogger.Error("Failed to unmarshal message: %s\n", err)
+		handlerLogger.Error("Failed to unmarshal message", err)
 		span.RecordError(err)
 		return
 	}
 	log.Printf("Received submission: %v\n", submission)
 	execution := submission.ToExecution(repository.PENDING)
 	if execution == nil {
-		log.Printf("Error parsing execution\n")
+		handlerLogger.Error("Error parsing execution\n")
 		span.RecordError(err)
 		return
 	}
@@ -146,7 +147,6 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 
 	state := h.executionRepository.GetStateByExecutionID(step.ExecutionID)
 
-	// TODO: move argsMatcher so it only compiles once.
 	argsMatcher := regexp.MustCompile(`\$args\.(.+)`)
 	// Build corresponding inputs
 	argsMap := make(map[string]interface{})
@@ -184,7 +184,8 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 		} else {
 			result, ok := outputMap[key]
 			if !ok {
-				existMapping = false
+				// Use hardcoded value
+				inputs[arg] = key
 			} else {
 				inputs[arg] = result
 			}
@@ -196,6 +197,11 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 			span.RecordError(err)
 			return
 		}
+	}
+
+	if step.Service == "native" {
+		h.HandleNativeStep(step, state, inputs, span, ctx)
+		return
 	}
 
 	serviceMessage := ServiceMessage{
@@ -225,6 +231,141 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 	h.executionRepository.UpdateState(context.Background(), state)
 }
 
+func (h *Handler) HandleNativeStep(step repository.ExecutionStepDTO, state *repository.State, inputs map[string]interface{}, span trace.Span, ctx context.Context) {
+	execution := h.executionRepository.GetExecutionById(state.ExecutionID)
+
+	switch step.Task {
+	case "if":
+		{
+			leftValue, leftOk := inputs["leftValue"]
+			rightValue, rightOk := inputs["rightValue"]
+			operator, opOk := inputs["operator"]
+			onTruePath, onTrueOk := inputs["onTrue"]
+			onFalsePath, onFalseOk := inputs["onFalse"]
+
+			values := [...]bool{leftOk, rightOk, opOk, onTrueOk, onFalseOk}
+			valuesName := [...]string{"leftValue", "rightValue", "operator", "onTrue", "onFalse"}
+
+			failed := make([]string, 0)
+			for i, value := range values {
+				if !value {
+					failed = append(failed, valuesName[i])
+				}
+			}
+			if len(failed) > 0 {
+				state.Status = repository.FAILED
+				state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
+					Key:   "error",
+					Value: fmt.Sprintf("Following required properties are not specified %s", strings.Join(failed, ",")),
+				})
+				h.executionRepository.UpdateState(context.Background(), state)
+				return
+			}
+
+			// Evaluate condition
+			var evalPath string
+			var evalResult bool
+			if operator == "==" {
+				evalResult = leftValue == rightValue
+				if evalResult {
+					evalPath = onTruePath.(string)
+				} else {
+					evalPath = onFalsePath.(string)
+				}
+			} else if operator == "!=" {
+				evalResult = leftValue != rightValue
+				if evalResult {
+					evalPath = onFalsePath.(string)
+				} else {
+					evalPath = onTruePath.(string)
+				}
+			} else {
+				state.Status = repository.FAILED
+				state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
+					Key:   "error",
+					Value: fmt.Sprintf("%s is not a valid operator", operator),
+				})
+				h.executionRepository.UpdateState(context.Background(), state)
+				return
+			}
+
+			steps := execution.Steps
+			var currentStep *repository.Step
+			var nextStep *repository.Step
+			var inmediateNextStep *repository.Step
+			for _, value := range steps {
+				if evalPath == value.Name {
+					nextStep = value
+				}
+				if currentStep != nil {
+					inmediateNextStep = value
+				}
+				if value.Name == step.Name {
+					currentStep = value
+				}
+			}
+
+			if evalPath == "continue" {
+				nextStep = inmediateNextStep
+			} else if nextStep == nil {
+				// No found path
+				state.Status = repository.FAILED
+				state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
+					Key:   "error",
+					Value: fmt.Sprintf("Path %s is not found", evalPath),
+				})
+				h.executionRepository.UpdateState(context.Background(), state)
+				return
+			}
+
+			// Got to end of steps
+			if nextStep == nil {
+				state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
+					Key:   step.Name + ".result",
+					Value: evalPath,
+				})
+				state.Status = repository.SUCCESS
+			} else {
+				stepToExecute := nextStep.ToExecutionStepDTO()
+
+				//Enqueue the step
+				bytes, err := json.Marshal(stepToExecute)
+				if err != nil {
+					log.Printf("Failed to marshal message: %s\n", err)
+					span.RecordError(err)
+					state.Status = repository.FAILED
+					h.executionRepository.UpdateState(context.Background(), state)
+					return
+				}
+				err = ProduceMessage(h.executionStepsWriter, h.PassHeader(ctx), bytes)
+				if err != nil {
+					log.Printf("Failed to produce message: %s\n", err)
+					state.Status = repository.FAILED
+					h.executionRepository.UpdateState(context.Background(), state)
+					return
+				}
+				state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
+					Key:   step.Name + ".result",
+					Value: evalPath,
+				})
+			}
+		}
+	case "abort":
+		{
+			state.Status = repository.SUCCESS
+		}
+	default:
+		{
+			state.Status = repository.FAILED
+			state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
+				Key:   "error",
+				Value: fmt.Sprintf("%s is not a valid native taskname", step.Task),
+			})
+		}
+	}
+	h.executionRepository.UpdateState(context.Background(), state)
+}
+
 type ServiceResponse struct {
 	ExecutionID uint                   `json:"executionId"`
 	Outputs     map[string]interface{} `json:"outputs"`
@@ -250,8 +391,22 @@ func (h *Handler) HandleServiceResponse(message []byte, header []kafka.Header) {
 		return
 	}
 	state := execution.State
-	if response.Outputs["error"] != nil {
+	outputErr := response.Outputs["error"]
+	if outputErr != nil {
 		execution.State.Status = repository.FAILED
+
+		errorMsg, ok := outputErr.(map[string]string)
+		if !ok {
+			errorMsg = map[string]string{
+				"msg": "Error message is not an object",
+			}
+		}
+
+		str, err := json.Marshal(errorMsg)
+		if err != nil {
+			span.RecordError(err)
+		}
+		execution.State.Outputs = append(state.Outputs, &repository.KeyValueOutput{Key: "error", Value: string(str)})
 		h.executionRepository.UpdateState(context.Background(), execution.State)
 		log.Printf("Service failed: %s\n", response.Outputs["error"])
 		span.RecordError(err)

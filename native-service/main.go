@@ -3,12 +3,24 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/joho/godotenv"
 	kafka "github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/log/global"
+	setupLog "go.opentelemetry.io/otel/sdk/log"
+
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 //TIP <p>To run your code, right-click the code and select <b>Run</b>.</p> <p>Alternatively, click
@@ -19,15 +31,87 @@ type EchoResponse struct {
 	Outputs     map[string]interface{} `json:"outputs"`
 }
 
-type EchoRequest struct {
+type TaskRequest struct {
 	ExecutionId int                    `json:"executionId"`
 	TaskName    string                 `json:"taskName"`
 	Inputs      map[string]interface{} `json:"inputs"`
 }
 
+var (
+	serviceName  = os.Getenv("SERVICE_NAME")
+	collectorURL = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+)
+
+func initTracer() func(context.Context) error {
+	secureOption := otlptracegrpc.WithInsecure()
+
+	log.Printf("COLLECTOR_ENDPOINT" + collectorURL)
+	exporter, err := otlptrace.New(
+		context.Background(),
+		otlptracegrpc.NewClient(
+			secureOption,
+			otlptracegrpc.WithEndpoint(collectorURL),
+		),
+	)
+
+	if err != nil {
+		log.Println(err)
+	}
+	resources, err := resource.New(
+		context.Background(),
+		resource.WithAttributes(
+			attribute.String("service.name", serviceName),
+			attribute.String("library.language", "go"),
+		),
+	)
+	if err != nil {
+		log.Printf("Could not set resources: %s", err)
+	}
+
+	otel.SetTracerProvider(
+		sdktrace.NewTracerProvider(
+			sdktrace.WithSampler(sdktrace.AlwaysSample()),
+			sdktrace.WithBatcher(exporter),
+			sdktrace.WithResource(resources),
+		),
+	)
+
+	return exporter.Shutdown
+}
+
+func initLogger() (context.Context, *setupLog.LoggerProvider) {
+	ctx := context.Background()
+
+	// Create the OTLP log exporter that sends logs to configured destination
+	logExporter, err := otlploghttp.New(ctx)
+	if err != nil {
+		fmt.Printf("Error initializing logger", err)
+	}
+
+	// Create the logger provider
+	lp := setupLog.NewLoggerProvider(
+		setupLog.WithProcessor(
+			setupLog.NewBatchProcessor(logExporter),
+		),
+	)
+
+	global.SetLoggerProvider(lp)
+	return ctx, lp
+}
+
 func main() {
-	//TIP <p>Press <shortcut actionId="ShowIntentionActions"/> when your caret is at the underlined text
-	// to see how GoLand suggests fixing the warning.</p><p>Alternatively, if available, click the lightbulb to view possible fixes.</p>
+	ctx, lp := initLogger()
+	defer func() {
+		lp.Shutdown(ctx)
+	}()
+	logger := otelslog.NewLogger("scheduler-init")
+
+	err := initTracer()
+	if err != nil {
+		logger.Info("Error initiating tracer", err)
+	}
+
+	HostPort := os.Getenv("HOST_PORT")
 
 	EnvMode := os.Getenv("ENV_MODE")
 	if EnvMode == "development" || EnvMode == "" {
@@ -55,37 +139,46 @@ func main() {
 		for {
 			msg, err := reader.ReadMessage(context.Background())
 			if err != nil {
-				log.Printf("Error reading message: %v", err)
+				logger.Error("Error reading message:", err)
 			} else {
-				var request EchoRequest
+				var request TaskRequest
 				err := json.Unmarshal(msg.Value, &request)
 				if err != nil {
-					log.Printf("Error unmarshaling message: %v", err)
+					logger.Error("Error unmarshaling message:", err)
 					continue
 				}
 
 				if request.TaskName == "echo" {
-					log.Printf("Received message: %s", string(msg.Value))
+					logger.Debug("Received message: %s", string(msg.Value))
 					requestMessage, ok := request.Inputs["msg"]
+					var echoResponse EchoResponse
 					if !ok {
-						continue
-					}
-					echoResponse := EchoResponse{
-						ExecutionId: request.ExecutionId,
-						Outputs: map[string]interface{}{
-							"msg": requestMessage,
-						},
+						echoResponse = EchoResponse{
+							ExecutionId: request.ExecutionId,
+							Outputs: map[string]interface{}{
+								"error": map[string]string{
+									"msg": "No msg property in inputs",
+								},
+							},
+						}
+					} else {
+						echoResponse = EchoResponse{
+							ExecutionId: request.ExecutionId,
+							Outputs: map[string]interface{}{
+								"msg": requestMessage,
+							},
+						}
 					}
 
 					finalMsg, err := json.Marshal(echoResponse)
 					if err != nil {
-						log.Printf("Error marshaling final response: %v", err)
+						logger.Error("Error marshaling final response: %v", err)
 						continue
 					}
-					log.Printf("Sending response: %s", string(finalMsg))
+					logger.Info("Sending response: %s", string(finalMsg))
 					err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg})
 					if err != nil {
-						log.Printf("Error writing final response: %v", err)
+						logger.Error("Error writing final response: %v", err)
 					}
 				} else {
 					finalMsg, err := json.Marshal(EchoResponse{
@@ -97,24 +190,25 @@ func main() {
 						},
 					})
 					if err != nil {
-						log.Printf("Error marshaling final response: %v", err)
+						logger.Error("Error marshaling final response: %v", err)
 						continue
 					}
 					err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg})
 					if err != nil {
-						log.Printf("Error writing final response: %v", err)
+						logger.Error("Error writing final response: %v", err)
 					}
 				}
 			}
 		}
 	}()
 
-	log.Print("Server started on port 8080")
+	log.Printf("Server started on port %s\n", HostPort)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello, World!"))
 	})
 
-	err := http.ListenAndServe(":8080", nil)
-
-	log.Printf("Error starting server: %v", err.Error())
+	errServer := http.ListenAndServe(HostPort, nil)
+	if errServer != nil {
+		log.Printf("Error binding to port %s", HostPort)
+	}
 }

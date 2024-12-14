@@ -18,6 +18,10 @@ func NewServiceRepository() *ServiceRepository {
 				Server: os.Getenv("NATIVE_HOST") + ":" + os.Getenv("NATIVE_PORT"),
 				Topic:  os.Getenv("NATIVE_TOPIC"),
 			},
+			"native": {
+				Server: "",
+				Topic:  "",
+			},
 		},
 	}
 }
