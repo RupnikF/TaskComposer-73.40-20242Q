@@ -112,76 +112,76 @@ resource "aws_security_group" "example" {
   }
 }
 
-# The map here can come from other supported configurations
-# like locals, resource attribute, map() built-in, etc.
-variable "my_secrets" {
-  default = {
-    key1 = "value1"
-    key2 = "value2"
-  }
-  sensitive     = true
-  type = map(string)
-}
+# # The map here can come from other supported configurations
+# # like locals, resource attribute, map() built-in, etc.
+# variable "my_secrets" {
+#   default = {
+#     key1 = "value1"
+#     key2 = "value2"
+#   }
+#   sensitive     = true
+#   type = map(string)
+# }
 
-resource "aws_secretsmanager_secret" "my_secrets" {
-  name = "my_secrets"
-}
-
-resource "aws_secretsmanager_secret_version" "my_secrets" {
-  secret_id     = aws_secretsmanager_secret.my_secrets.id
-  secret_string = jsonencode(var.my_secrets)
-  
-}
-
-resource "aws_secretsmanager_secret_policy" "secret_policy" {
-  secret_arn = aws_secretsmanager_secret.my_secrets.arn
-  policy     = jsonencode({
-        Version = "2012-10-17",
-        Statement = [
-            {
-                Effect = "Allow",
-                Principal = {
-                    AWS = data.aws_iam_role.lab_role.arn
-                },
-                Action = [
-                    "secretsmanager:GetSecretValue",
-                    "secretsmanager:DescribeSecret"
-                ],
-                Resource = aws_secretsmanager_secret.my_secrets.arn
-            }
-        ]
-    })
-}
-
-resource "aws_vpc_endpoint" "secrets_manager" {
-  vpc_id            = data.aws_vpc.default.id
-  service_name      = "com.amazonaws.${local.region}.secretsmanager"
-  vpc_endpoint_type   = "Interface"
-
-  private_dns_enabled = true
-  subnet_ids         = data.aws_subnets.default.ids
-
-  security_group_ids = [aws_security_group.example.id]
-
-  dns_options {
-    dns_record_ip_type = "ipv4"
-    private_dns_only_for_inbound_resolver_endpoint = true
-  }
-
-  policy = jsonencode({
-      Version = "2012-10-17",
-      Statement = [
-        {
-          Effect = "Allow"
-          Action = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
-          Resource = aws_secretsmanager_secret.my_secrets.arn
-          Principal = {
-              AWS = data.aws_iam_role.lab_role.arn
-          }
-        }
-      ]
-  })
-}
+# resource "aws_secretsmanager_secret" "my_secrets" {
+#   name = "my_secrets"
+# }
+#
+# resource "aws_secretsmanager_secret_version" "my_secrets" {
+#   secret_id     = aws_secretsmanager_secret.my_secrets.id
+#   secret_string = jsonencode(var.my_secrets)
+#
+# }
+#
+# resource "aws_secretsmanager_secret_policy" "secret_policy" {
+#   secret_arn = aws_secretsmanager_secret.my_secrets.arn
+#   policy     = jsonencode({
+#         Version = "2012-10-17",
+#         Statement = [
+#             {
+#                 Effect = "Allow",
+#                 Principal = {
+#                     AWS = data.aws_iam_role.lab_role.arn
+#                 },
+#                 Action = [
+#                     "secretsmanager:GetSecretValue",
+#                     "secretsmanager:DescribeSecret"
+#                 ],
+#                 Resource = aws_secretsmanager_secret.my_secrets.arn
+#             }
+#         ]
+#     })
+# }
+#
+# resource "aws_vpc_endpoint" "secrets_manager" {
+#   vpc_id            = data.aws_vpc.default.id
+#   service_name      = "com.amazonaws.${local.region}.secretsmanager"
+#   vpc_endpoint_type   = "Interface"
+#
+#   private_dns_enabled = true
+#   subnet_ids         = data.aws_subnets.default.ids
+#
+#   security_group_ids = [aws_security_group.example.id]
+#
+#   dns_options {
+#     dns_record_ip_type = "ipv4"
+#     private_dns_only_for_inbound_resolver_endpoint = true
+#   }
+#
+#   policy = jsonencode({
+#       Version = "2012-10-17",
+#       Statement = [
+#         {
+#           Effect = "Allow"
+#           Action = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
+#           Resource = aws_secretsmanager_secret.my_secrets.arn
+#           Principal = {
+#               AWS = data.aws_iam_role.lab_role.arn
+#           }
+#         }
+#       ]
+#   })
+# }
 
 output "ssh_commands_to_worker_nodes" {
   value       = [for public_dns in aws_instance.node.*.public_dns : "ssh ubuntu@${public_dns}"]

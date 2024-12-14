@@ -62,3 +62,6 @@ sudo apt-mark hold kubelet kubeadm kubectl
 sudo hostnamectl set-hostname ${HOSTNAME}
 
 sudo apt-get update && apt-get install -y nfs-common
+# Disable firewall and reboot
+sudo ufw disable
+sudo reboot

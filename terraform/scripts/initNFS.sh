@@ -18,5 +18,6 @@ sudo systemctl restart nfs-kernel-server
 
 # Disable the firewall
 sudo ufw disable
+sudo reboot
 
 

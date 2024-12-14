@@ -68,3 +68,6 @@ sudo chown ubuntu:ubuntu /home/ubuntu/.kube/config
 kubectl --kubeconfig /home/ubuntu/.kube/config apply -f https://docs.projectcalico.org/manifests/calico.yaml
 
 sudo apt-get update && apt-get install -y nfs-common
+# Disable firewall and reboot
+sudo ufw disable
+sudo reboot
