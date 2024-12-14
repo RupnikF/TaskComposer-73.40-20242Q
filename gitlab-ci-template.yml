@@ -114,7 +114,7 @@ deliver-to-registry:
     - echo "${CI_PASSWORD}" | docker login -u "${CI_USERNAME}" --password-stdin $CI_REGISTRY
     - docker pull "$IMAGE_TO_PULL"
     # Ponemos las credenciales de Dockerhub
-    - echo "${DOCKER_HUB_PASSWORD}" | img login -u "${DOCKER_HUB_USERNAME}" --password-stdin
+    - echo "${DOCKER_HUB_PASSWORD}" | docker login -u "${DOCKER_HUB_USERNAME}" --password-stdin
     - export DOCKERHUB_IMAGE="${DOCKER_HUB_USER}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
     # Re-tag the image for Docker Hub
     - docker tag "$IMAGE_TO_PULL" "$DOCKERHUB_IMAGE"
