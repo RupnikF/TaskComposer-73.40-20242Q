@@ -6,7 +6,7 @@ metadata:
 spec:
   routes:                          
   - kind: Rule
-    match: PathPrefix(`/executions`) && Host(`workflow-manager.local`) && Method(`GET`)
+    match: PathPrefix(`/executions`) && Method(`GET`)
     services:                       
     - kind: Service
       name: scheduler

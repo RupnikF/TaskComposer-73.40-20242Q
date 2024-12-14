@@ -6,7 +6,7 @@ metadata:
 spec:
   routes:                          
   - kind: Rule
-    match: PathPrefix(`/monitoring`) && Host(`workflow-manager.local`)
+    match: PathPrefix(`/monitoring`)
     services:                       
     - kind: Service
       name: logging-signoz-frontend
