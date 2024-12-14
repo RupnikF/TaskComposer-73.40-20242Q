@@ -105,21 +105,18 @@ package:
 
 deliver-to-registry:
   stage: release
-  image:
-    name: jess/img:v0.5.9
-    entrypoint: [ "" ]
   script:
     # Pulleamos la imagen para que no se haga el build de nuevo
     - export IMAGE_TO_PULL="${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
-    - echo "${CI_PASSWORD}" | img login -u "${CI_USERNAME}" --password-stdin $CI_REGISTRY
-    - img pull "$IMAGE_TO_PULL"
+    - echo "${CI_PASSWORD}" | docker login -u "${CI_USERNAME}" --password-stdin $CI_REGISTRY
+    - docker pull "$IMAGE_TO_PULL"
     # Ponemos las credenciales de Dockerhub
     - echo "${DOCKER_HUB_PASSWORD}" | img login -u "${DOCKER_HUB_USERNAME}" --password-stdin
     - export DOCKERHUB_IMAGE="${DOCKER_HUB_USER}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
     # Re-tag the image for Docker Hub
-    - img tag "$IMAGE_TO_PULL" "$DOCKERHUB_IMAGE"
+    - docker tag "$IMAGE_TO_PULL" "$DOCKERHUB_IMAGE"
     # Push the image to Docker Hub using Kaniko
-    - img push "$DOCKERHUB_IMAGE"
+    - docker push "$DOCKERHUB_IMAGE"
   needs:
   - job: package
     artifacts: true
