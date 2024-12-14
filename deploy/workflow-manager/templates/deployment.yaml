@@ -65,7 +65,9 @@ spec:
             - name: "OTEL_SERVICE_NAME"
               value: "workflow-manager"
             - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
-              value: "http://logging-signoz-otel-collector.default.svc.cluster.local:4318"
+              value: "http://logging-signoz-otel-collector.default.svc.cluster.local:4317"
+            - name: "OTEL_EXPORTER_OTLP_PROTOCOL"
+              value: "grpc"
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
