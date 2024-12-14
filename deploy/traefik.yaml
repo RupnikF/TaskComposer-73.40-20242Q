@@ -36,6 +36,18 @@ providers:
     enabled: true
     ingressClass: "traefik"  # This ensures that Traefik picks up Ingress resources annotated with "traefik"
 
+securityContext:
+  allowPrivilegeEscalation: true
+  capabilities:
+      drop:
+      - ALL
+      add:
+      - NET_BIND_SERVICE
+
+podSecurityContext:
+  runAsNonRoot: false
+  runAsUser: 0
+  runAsGroup: 0
 
 additionalArguments:
   - "--api.insecure=true"       # Enable the dashboard without authentication
