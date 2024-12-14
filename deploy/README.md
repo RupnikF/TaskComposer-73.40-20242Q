@@ -13,6 +13,7 @@ helmfile init # Poner 'y' a todo. Este lo corres una vez en la vida nomas
 # Install Traefik Resource Definitions:
 kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v2.10/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml
 
+#No es necesario Ya --> Skippear esto
 echo "<token>" | docker login -u <user> --password-stdin registry.gitlab.com
 export DOCKER_CONFIG_B64=$(cat ~/.docker/config.json | base64)
 

@@ -159,14 +159,14 @@ releases:
       - accessMode: "ReadWriteMany"
       - nfsServer: {{ requiredEnv "NFS_SERVER" }}
       - nfsPath: "/mnt/nfs"
-  - name: registry-secret
-    chart: ./registry-secret
-    values:
-      - dockerconfigjsonb64: {{ requiredEnv "DOCKER_CONFIG_B64" | quote }}
-      - available_namespaces:
-          - scheduler
-          - workflow-manager
-          - native-service
+#  - name: registry-secret
+#    chart: ./registry-secret
+#    values:
+#      - dockerconfigjsonb64: {{ requiredEnv "DOCKER_CONFIG_B64" | quote }}
+#      - available_namespaces:
+#          - scheduler
+#          - workflow-manager
+#          - native-service
   - name: logging
     namespace: default
     chart: signoz/signoz
