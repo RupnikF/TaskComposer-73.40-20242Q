@@ -20,7 +20,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 		"com.taskcomposer.workflow_manager.controllers",
 		"com.taskcomposer.workflow_manager.services",
 		"com.taskcomposer.workflow_manager.config",
-		"com.taskcomposer.workflow_manager.repositories"
+		"com.taskcomposer.workflow_manager.repositories",
+		"com.taskcomposer.workflow_manager.grpc_services"
 })
 @EntityScan( basePackages = "com.taskcomposer.workflow_manager.repositories.models")
 public class WorkflowManagerApplication {

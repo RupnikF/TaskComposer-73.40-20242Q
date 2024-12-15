@@ -1,6 +1,5 @@
 package com.taskcomposer.workflow_manager.services;
 
-import com.taskcomposer.workflow_manager.controllers.ExecutionController;
 import com.taskcomposer.workflow_manager.controllers.dtos.ExecutionSubmissionDTO;
 import com.taskcomposer.workflow_manager.repositories.model.Workflow;
 import io.opentelemetry.api.OpenTelemetry;
@@ -11,7 +10,6 @@ import jakarta.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -22,8 +20,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 @Service
-public class ExecutionService {
-    private final Logger log = LogManager.getLogger(ExecutionService.class);
+public class TriggerService {
+    private final Logger log = LogManager.getLogger(com.taskcomposer.workflow_manager.services.TriggerService.class);
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final Tracer tracer;
 
@@ -31,15 +29,14 @@ public class ExecutionService {
     private String kafkaTopic;
 
     @Inject
-    public ExecutionService(KafkaTemplate<String, Object> kafkaTemplate, OpenTelemetry openTelemetry) {
+    public TriggerService(KafkaTemplate<String, Object> kafkaTemplate, OpenTelemetry openTelemetry) {
         this.kafkaTemplate = kafkaTemplate;
-        this.tracer = openTelemetry.tracerBuilder(ExecutionController.class.getName()).build();
+        this.tracer = openTelemetry.tracerBuilder(com.taskcomposer.workflow_manager.controllers.TriggerController.class.getName()).build();
     }
 //
-    public String executeWorkflow(Workflow workflow, List<String> tags, Map<String, String> parameters, Map<String, String> args) {
+    public String triggerWorkflow(Workflow workflow, List<String> tags, Map<String, String> parameters, Map<String, String> args) {
         ExecutionSubmissionDTO submissionDTO = new ExecutionSubmissionDTO(workflow, tags, parameters, args);
-        // TODO: send submissionDTO to queue of submissions
-        Span span = this.tracer.spanBuilder("Execution Service").startSpan();
+        Span span = this.tracer.spanBuilder("Trigger Service").startSpan();
         span.setAttribute("execution-topic", kafkaTopic);
         var completableFuture = this.kafkaTemplate.send(kafkaTopic , submissionDTO);
         try {

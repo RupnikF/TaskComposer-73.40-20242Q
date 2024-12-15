@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 @Getter
-public class ExecutionRequestDTO {
+public class TriggerRequestDTO {
     private String workflowName;
     private List<String> tags;
     private Map<String, String> parameters;
