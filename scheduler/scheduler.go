@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"log"
 	"os"
 	"scheduler/broker"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -26,19 +26,19 @@ import (
 )
 
 var (
-	serviceName  = os.Getenv("SERVICE_NAME")
-	collectorURL = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	serviceName      = os.Getenv("SERVICE_NAME")
+	grpcCollectorURL = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT_GRPC")
 )
 
 func initTracer() func(context.Context) error {
 	secureOption := otlptracegrpc.WithInsecure()
 
-	log.Printf("COLLECTOR_ENDPOINT" + collectorURL)
+	log.Printf("COLLECTOR_ENDPOINT_GRPC" + grpcCollectorURL)
 	exporter, err := otlptrace.New(
 		context.Background(),
 		otlptracegrpc.NewClient(
 			secureOption,
-			otlptracegrpc.WithEndpoint(collectorURL),
+			otlptracegrpc.WithEndpoint(grpcCollectorURL),
 		),
 	)
 
@@ -63,7 +63,6 @@ func initTracer() func(context.Context) error {
 			sdktrace.WithResource(resources),
 		),
 	)
-
 	return exporter.Shutdown
 }
 
@@ -88,7 +87,6 @@ func initLogger() (context.Context, *setupLog.LoggerProvider) {
 }
 
 func main() {
-	HostPort := os.Getenv("HOST_PORT")
 
 	ctx, lp := initLogger()
 	defer lp.Shutdown(ctx)
@@ -167,6 +165,9 @@ func main() {
 		handler.HandleExecutionStep,
 	)
 	for _, service := range serviceRepository.GetServices() {
+		if service.Server == "" {
+			continue
+		}
 		serviceReader := broker.GetReader([]string{service.Server}, service.OutputTopic, service.Name)
 		go broker.ConsumeMessageWithHandler(
 			serviceReader,
@@ -174,9 +175,8 @@ func main() {
 			handler.HandleServiceResponse,
 		)
 	}
-
-	init.Info("Running at ", HostPort)
-	err := r.Run(HostPort)
+	init.Info("Starting scheduler")
+	err := r.Run()
 	if err != nil {
 		return
 	} // listen and serve on 0.0.0.0:8080

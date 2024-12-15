@@ -62,32 +62,20 @@ spec:
               value: {{ .Values.kafka_host }}
             - name: "KAFKA_PORT"
               value: {{ .Values.kafka_port | quote }}
-            - name: "SUBMISSIONS_TOPIC"
-              value: {{ .Values.submission_kafka_topic }}
-            - name: "STEPS_TOPIC"
-              value: {{ .Values.steps_kafka_topic }}
-            - name: "REDIS_HOST"
-              value: {{ .Values.redis_host }}
             - name: "ENV_MODE"
               value: "production"
             - name: "SUBMISSIONS_TOPIC"
               value: {{ .Values.submissions_topic }}
             - name: "STEPS_TOPIC"
               value: {{ .Values.steps_topic }}
-            - name: "NATIVE_HOST"
-              value: {{ .Values.native_host }}
-            - name: "NATIVE_PORT"
-              value: {{ .Values.native_port | quote }}
-            - name: "NATIVE_TOPIC"
-              value: {{ .Values.native_topic }}
-            - name: "NATIVE_OUTPUT_TOPIC"
-              value: {{ .Values.native_output_topic }}
-            - name: "SERVICE_HOST"
-              value: {{ .Values.service_host }}
             - name: "SERVICE_NAME"
               value: "scheduler"
             - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "logging-signoz-otel-collector.default.svc.cluster.local:4318"
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT_GRPC"
               value: "logging-signoz-otel-collector.default.svc.cluster.local:4317"
+            - name: "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT"
+              value: "http://logging-signoz-otel-collector.default.svc.cluster.local:4318/v1/logs"
             - name: "SERVICES_FILE_PATH"
               value: {{ .Values.services_file_path }}
           livenessProbe:

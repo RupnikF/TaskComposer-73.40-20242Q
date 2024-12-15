@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -38,19 +39,19 @@ type TaskRequest struct {
 }
 
 var (
-	serviceName  = os.Getenv("SERVICE_NAME")
-	collectorURL = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	serviceName      = os.Getenv("SERVICE_NAME")
+	grpcCollectorURL = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT_GRPC")
 )
 
 func initTracer() func(context.Context) error {
 	secureOption := otlptracegrpc.WithInsecure()
 
-	log.Printf("COLLECTOR_ENDPOINT" + collectorURL)
+	log.Printf("COLLECTOR_ENDPOINT_GRPC" + grpcCollectorURL)
 	exporter, err := otlptrace.New(
 		context.Background(),
 		otlptracegrpc.NewClient(
 			secureOption,
-			otlptracegrpc.WithEndpoint(collectorURL),
+			otlptracegrpc.WithEndpoint(grpcCollectorURL),
 		),
 	)
 
@@ -204,10 +205,10 @@ func main() {
 
 	log.Printf("Server started on port %s\n", HostPort)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello, World!"))
+		io.WriteString(w, "This is my website!\n")
 	})
 
-	errServer := http.ListenAndServe(HostPort, nil)
+	errServer := http.ListenAndServe(":8080", nil)
 	if errServer != nil {
 		log.Printf("Error binding to port %s", HostPort)
 	}

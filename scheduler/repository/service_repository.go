@@ -25,16 +25,12 @@ func NewServiceRepository() *ServiceRepository {
 	if err != nil {
 		log.Printf("Failed to read services file: %s\n", err)
 	}
-	services := make([]Service, 0)
-	err = json.Unmarshal(bytes, &services)
+	serviceRepository := ServiceRepository{}
+	err = json.Unmarshal(bytes, &serviceRepository)
 	if err != nil {
 		log.Printf("Failed to unmarshal services file: %s\n", err)
 	}
-	serviceMap := make(map[string]Service)
-	for _, s := range services {
-		serviceMap[s.Name] = s
-	}
-	return &ServiceRepository{serviceMap}
+	return &serviceRepository
 }
 func (sr *ServiceRepository) GetService(name string) (Service, error) {
 	service, ok := sr.Services[name]
