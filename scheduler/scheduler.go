@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/segmentio/kafka-go"
 	"log"
 	"os"
 	"scheduler/broker"
@@ -136,9 +138,18 @@ func main() {
 
 	kafkaHost := []string{os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")}
 	executionStepsWriter := broker.GetWriter(kafkaHost, broker.GetStepKafkaTopic())
-	serviceWriter := broker.GetGenericWriter(kafkaHost)
+
+	serviceWriters := make(map[string]*kafka.Writer)
+	for _, service := range serviceRepository.GetServices() {
+		fmt.Printf("Service: %v\n", service.Name)
+		if service.Server == "" {
+			log.Printf("Service %s has no server", service.Name)
+			continue
+		}
+		serviceWriters[service.Name] = broker.GetWriter([]string{service.Server}, service.InputTopic)
+	}
 	tp := otel.GetTracerProvider()
-	handler := broker.NewHandler(executionRepository, serviceRepository, executionStepsWriter, serviceWriter, tp)
+	handler := broker.NewHandler(executionRepository, serviceRepository, executionStepsWriter, serviceWriters, tp)
 
 	executionReader := broker.GetExecutionReader()
 
@@ -155,14 +166,14 @@ func main() {
 		-1,
 		handler.HandleExecutionStep,
 	)
-	serviceHost := os.Getenv("SERVICE_HOST") + ":" + os.Getenv("NATIVE_PORT")
-	nativeTopic := os.Getenv("NATIVE_OUTPUT_TOPIC")
-	nativeServiceReader := broker.GetReader([]string{serviceHost}, nativeTopic, "native-service")
-	go broker.ConsumeMessageWithHandler(
-		nativeServiceReader,
-		-1,
-		handler.HandleServiceResponse,
-	)
+	for _, service := range serviceRepository.GetServices() {
+		serviceReader := broker.GetReader([]string{service.Server}, service.OutputTopic, service.Name)
+		go broker.ConsumeMessageWithHandler(
+			serviceReader,
+			-1,
+			handler.HandleServiceResponse,
+		)
+	}
 
 	init.Info("Running at ", HostPort)
 	err := r.Run(HostPort)

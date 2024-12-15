@@ -29,6 +29,15 @@ run-workflow-manager-pipeline:
         - workflow-manager/*
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
+run-echo-service-pipeline:
+  stage: pipeline
+  trigger:
+    include: echo-service/.gitlab-ci.yml
+  rules:
+    - changes:
+        - echo-service/*
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
 e2e-test:
   stage: test
   script:
@@ -37,6 +46,7 @@ e2e-test:
   - job: run-scheduler-pipeline
   - job: run-service-registry-pipeline
   - job: run-workflow-manager-pipeline
+  - job: run-echo-service-pipeline
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 

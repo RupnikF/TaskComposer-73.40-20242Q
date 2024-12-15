@@ -1,31 +1,52 @@
 package repository
 
-import "os"
+import (
+	"encoding/json"
+	"log"
+	"os"
+)
 
 type Service struct {
-	Server string
-	Topic  string
+	Server      string `json:"server"`
+	Name        string `json:"name"`
+	InputTopic  string `json:"inputTopic"`
+	OutputTopic string `json:"outputTopic"`
 }
 
 type ServiceRepository struct {
-	serviceMap map[string]*Service
+	Services map[string]Service `json:"services"`
 }
 
 func NewServiceRepository() *ServiceRepository {
-	return &ServiceRepository{
-		map[string]*Service{
-			"echo-service": {
-				Server: os.Getenv("NATIVE_HOST") + ":" + os.Getenv("NATIVE_PORT"),
-				Topic:  os.Getenv("NATIVE_TOPIC"),
-			},
-			"native": {
-				Server: "",
-				Topic:  "",
-			},
-		},
-	}
-}
+	filePath := os.Getenv("SERVICES_FILE_PATH")
 
-func (r *ServiceRepository) GetService(serviceName string) *Service {
-	return r.serviceMap[serviceName]
+	bytes, err := os.ReadFile(filePath)
+
+	if err != nil {
+		log.Printf("Failed to read services file: %s\n", err)
+	}
+	services := make([]Service, 0)
+	err = json.Unmarshal(bytes, &services)
+	if err != nil {
+		log.Printf("Failed to unmarshal services file: %s\n", err)
+	}
+	serviceMap := make(map[string]Service)
+	for _, s := range services {
+		serviceMap[s.Name] = s
+	}
+	return &ServiceRepository{serviceMap}
+}
+func (sr *ServiceRepository) GetService(name string) (Service, error) {
+	service, ok := sr.Services[name]
+	if !ok {
+		return Service{}, nil
+	}
+	return service, nil
+}
+func (sr *ServiceRepository) GetServices() []Service {
+	services := make([]Service, 0)
+	for _, s := range sr.Services {
+		services = append(services, s)
+	}
+	return services
 }

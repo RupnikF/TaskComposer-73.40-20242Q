@@ -17,7 +17,7 @@ steps:
 
 
 ###
-GET http://localhost:8080/workflows
+GET http://localhost:8081/workflows
 
 ###
 POST http://localhost:8081/executions

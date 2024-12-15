@@ -24,7 +24,7 @@ type Handler struct {
 	executionRepository  *repository.ExecutionRepository
 	serviceRepository    *repository.ServiceRepository
 	executionStepsWriter *kafka.Writer
-	serviceWriter        *kafka.Writer
+	servicesWriters      map[string]*kafka.Writer
 	tracer               trace.Tracer
 }
 
@@ -32,14 +32,14 @@ func NewHandler(
 	executionRepository *repository.ExecutionRepository,
 	serviceRepository *repository.ServiceRepository,
 	executionStepsWriter *kafka.Writer,
-	serviceWriter *kafka.Writer,
+	servicesWriters map[string]*kafka.Writer,
 	tracerProvider trace.TracerProvider,
 ) *Handler {
 	return &Handler{
 		executionRepository,
 		serviceRepository,
 		executionStepsWriter,
-		serviceWriter,
+		servicesWriters,
 		tracerProvider.Tracer("kafka-handlers"),
 	}
 }
@@ -138,8 +138,8 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 	span.SetAttributes(attribute.String("Task", step.Task))
 	span.SetAttributes(attribute.String("Step", step.Name))
 
-	config := h.serviceRepository.GetService(step.Service)
-	if config == nil {
+	config, err := h.serviceRepository.GetService(step.Service)
+	if err != nil {
 		log.Printf("Service not found: %s\n", step.Service)
 		span.RecordError(fmt.Errorf("service not found: %s", step.Service))
 		return
@@ -218,8 +218,14 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 	}
 
 	log.Printf("Sending message: %s\n", message)
+	writer := h.servicesWriters[config.Name]
+	if writer == nil {
+		log.Printf("Writer not found: %s\n", config.Name)
+		return
+	}
 
-	err = ProduceTopicMessage(h.serviceWriter, message, h.PassHeader(ctx), config.Topic)
+
+	err = ProduceTopicMessage(writer, message, h.PassHeader(ctx), config.InputTopic)
 	if err != nil {
 		state.Status = repository.FAILED
 		h.executionRepository.UpdateState(context.Background(), state)

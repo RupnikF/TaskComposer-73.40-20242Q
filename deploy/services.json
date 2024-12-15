@@ -1,0 +1,16 @@
+{
+  "services": {
+    "echo_service": {
+      "server": "scheduler-broker-kafka:9092",
+      "name": "echo_service",
+      "inputTopic": "echo_service_input",
+      "outputTopic": "echo_service_output"
+    },
+    "native": {
+      "server": "",
+      "name": "native",
+      "inputTopic": "",
+      "outputTopic": ""
+    }
+  }
+}

@@ -4,7 +4,7 @@ locals {
   micro_instance_type = "t2.micro"
 
   ### ACTUALIZAR ESTOS VALORES
-  key_file_name = "~/.ssh/id_rsa.pub"
+  key_file_name = "./key.pub"
   region        = "us-east-1"
   ###
 }

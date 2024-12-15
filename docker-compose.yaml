@@ -1,4 +1,4 @@
 include:
   - scheduler/docker-compose.yaml
-  - native-service/docker-compose.yaml
+  - echo-service/docker-compose.yaml
   - workflow-manager/docker-compose.yaml
