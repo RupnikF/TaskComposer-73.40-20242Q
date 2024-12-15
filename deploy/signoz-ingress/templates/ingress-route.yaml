@@ -6,7 +6,7 @@ metadata:
 spec:
   routes:                          
   - kind: Rule
-    match: PathPrefix(`/monitoring`)
+    match: PathPrefix(`/`) && !(PathPrefix(`/executions`) || PathPrefix(`/dashboard`) || PathPrefix(`/workflows`)) 
     services:                       
     - kind: Service
       name: logging-signoz-frontend

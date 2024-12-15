@@ -2,7 +2,7 @@
 POST http://localhost:8081/workflows
 Content-Type: application/yaml
 
-name: "C workflow"
+name: "IFTEST"
 args:
   - property1:
       default: "value"
@@ -14,10 +14,42 @@ steps:
       task: "echo"
       input:
         msg: "$args.property1"
+  - check-property:
+      service: 'native'
+      task: "if"
+      input:
+        leftValue: "echo1.msg"
+        rightValue: "value"
+        operator: "=="
+        onTrue: "continue"
+        onFalse: "echo2"
+  - premature:
+      service: "native"
+      task: "abort"
+  - echo2:
+      service: "echo-service"
+      task: "echo"
+      input:
+        msg: "check-property.result"
+
 
 
 ###
 GET http://localhost:8081/workflows
+
+###
+POST http://localhost:8081/executions
+Content-Type: application/json
+
+{
+  "workflowName": "IFTEST",
+  "tags": [],
+  "parameters": {},
+  "args": {
+    "property1": "hola",
+    "property2": "chau"
+  }
+}
 
 ###
 POST http://localhost:8081/executions
@@ -32,6 +64,7 @@ Content-Type: application/json
     "property2": "chau"
   }
 }
+
 
 ###
 

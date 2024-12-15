@@ -29,17 +29,22 @@ public class WorkflowDefinitionDTO {
                     .task(stepDto.getTask())
                     .stepOrder(stepCounter.getAndIncrement());
             Step stepModel = stepBuilder.build();
-            stepModel.setStepInputs(
-                stepDto.getInput().entrySet()
-                    .stream()
-                    .map((input) ->
-                        StepInput.builder()
-                            .inputKey(input.getKey())
-                            .inputValue(input.getValue())
-                            .step(stepModel)
-                            .build()
-                    ).toList()
-            );
+
+            var inputMap = stepDto.getInput();
+            if (inputMap != null) {
+                stepModel.setStepInputs(
+                    stepDto.getInput().entrySet()
+                        .stream()
+                        .map((input) ->
+                                StepInput.builder()
+                                        .inputKey(input.getKey())
+                                        .inputValue(input.getValue())
+                                        .step(stepModel)
+                                        .build()
+                        ).toList()
+                );
+            }
+
             return stepModel;
         }).toList();
     }
