@@ -15,6 +15,7 @@ WORKDIR /
 
 COPY --from=builder /app .
 COPY ./*.sh .
+COPY ../services.json /data/services.json
 
 RUN chmod +x ./*.sh
 

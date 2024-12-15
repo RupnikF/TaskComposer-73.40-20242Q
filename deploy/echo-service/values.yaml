@@ -129,3 +129,9 @@ kafka_host:
 kafka_port:
 input_topic:
 output_topic:
+
+pvc:
+  - name: "service-a-pvc"
+  - size: "1Gi"
+  - appLabel: "nfs-storage"
+  - accessMode: "ReadWriteMany"

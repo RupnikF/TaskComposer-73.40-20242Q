@@ -12,6 +12,7 @@ FROM amazoncorretto:23-alpine
 WORKDIR /application
 
 COPY --from=builder /application/target/*.jar app.jar
+COPY ../services.json /data/services.json
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
 

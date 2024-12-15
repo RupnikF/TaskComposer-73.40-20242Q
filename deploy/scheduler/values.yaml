@@ -152,9 +152,3 @@ kafka_port:
 submissions_topic: 
 steps_topic:
 services_file_path:
-
-pvc:
-  - name: "service-a-pvc"
-  - size: "1Gi"
-  - appLabel: "nfs-storage"
-  - accessMode: "ReadWriteMany"

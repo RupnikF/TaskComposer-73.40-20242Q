@@ -83,19 +83,6 @@ releases:
       - submissions_topic: "execution_submissions"
       - steps_topic: "execution_steps"
       - services_file_path: "/data/services.json"
-      - pvc:
-            name: "scheduler-pv"
-            accessMode: "ReadWriteMany"
-            size: "2Gi"
-            label: "nfs-storage"
-      - volumes:
-          - name: "scheduler-pv"
-            persistentVolumeClaim:
-              claimName: "scheduler-pv"
-      - volumeMounts:
-          - name: "scheduler-pv"
-            mountPath: "/data"
-            readOnly: false
 
   # Workflow Manager
   - name: wf-db
@@ -139,6 +126,19 @@ releases:
       - kafka_port: "9092"
       - input_topic: "echo_service_input"
       - output_topic: "echo_service_output"
+      - pvc:
+          name: "echo-service-pv"
+          accessMode: "ReadWriteMany"
+          size: "2Gi"
+          label: "nfs-storage"
+      - volumes:
+          - name: "echo-service-pv"
+            persistentVolumeClaim:
+              claimName: "echo-service-pv"
+      - volumeMounts:
+          - name: "echo-service-pv"
+            mountPath: "/data"
+            readOnly: false
   - name: traefik
     namespace: default
     chart: traefik/traefik
