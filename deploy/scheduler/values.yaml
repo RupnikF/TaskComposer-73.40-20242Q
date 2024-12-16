@@ -10,7 +10,7 @@ image:
   #TODO: Pasarlo a .env
   repository: frupnik/scheduler
   # This sets the pull policy for images.
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "dev"
 
@@ -147,22 +147,8 @@ scheduler_db_host:
 scheduler_db_user:
 scheduler_db_pass:
 scheduler_db_db:
-submission_kafka_topic:
-steps_kafka_topic:
 kafka_host:
 kafka_port:
-redis_host:
 submissions_topic: 
 steps_topic:
-native_host: 
-native_port:
-native_topic: 
-native_output_topic: 
-service_host:
 services_file_path:
-
-pvc:
-  - name: "service-a-pvc"
-  - size: "1Gi"
-  - appLabel: "nfs-storage"
-  - accessMode: "ReadWriteMany"

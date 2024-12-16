@@ -38,8 +38,9 @@ build-images:
   stage: build
   image:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
-    entrypoint: [ "" ] # EntryPoint needs to be overridden because it's a shell otherwise
+    entrypoint: [ "" ]
   script:
+    - cp ${CI_PROJECT_DIR}/services.json ${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]
     - /kaniko/executor
       --dockerfile "${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]/Dockerfile"
       --context "${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]"
@@ -122,16 +123,6 @@ deliver-to-registry:
     - docker push "$DOCKERHUB_IMAGE"
   needs:
   - job: package
-    artifacts: true
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
-
-deploy-chart:
-  stage: deploy
-  script:
-  - echo "Deploy chart to environment"
-  needs:
-  - job: deliver-to-registry
     artifacts: true
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline"

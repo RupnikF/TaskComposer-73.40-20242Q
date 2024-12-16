@@ -6,7 +6,7 @@ commonLabels: {}
 image:
   repository: rancher/local-path-provisioner
   tag: master-head
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 helperImage:
   repository: busybox

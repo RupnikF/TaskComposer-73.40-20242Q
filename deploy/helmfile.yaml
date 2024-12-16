@@ -82,25 +82,7 @@ releases:
       - redis_host: "localhost"
       - submissions_topic: "execution_submissions"
       - steps_topic: "execution_steps"
-      - native_host: "scheduler-broker-kafka"
-      - native_port: "9092"
-      - native_topic: "native_tasks"
-      - native_output_topic: "native_task_output"
-      - service_host: "scheduler-broker-kafka"
       - services_file_path: "/data/services.json"
-      - pvc:
-            name: "scheduler-pv"
-            accessMode: "ReadWriteMany"
-            size: "2Gi"
-            label: "nfs-storage"
-      - volumes:
-          - name: "scheduler-pv"
-            persistentVolumeClaim:
-              claimName: "scheduler-pv"
-      - volumeMounts:
-          - name: "scheduler-pv"
-            mountPath: "/data"
-            readOnly: false
 
   # Workflow Manager
   - name: wf-db
@@ -133,17 +115,30 @@ releases:
       - workflows_db_db: {{ requiredEnv "WORKFLOWS_POSTGRES_DB" }}
       - submission_kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
       - submission_kafka_topic: "execution_submissions"
-  # native-service
-  - name: native-service
-    namespace: native-service
-    chart: ./native-service
+  # echo-service
+  - name: echo-service
+    namespace: echo-service
+    chart: ./echo-service
     values:
       - image:
-          tag: "dev-"
+          tag: "dev"
       - kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
       - kafka_port: "9092"
-      - input_topic: "native_tasks"
-      - output_topic: "native_task_output"
+      - input_topic: "echo_service_input"
+      - output_topic: "echo_service_output"
+      - pvc:
+          name: "echo-service-pv"
+          accessMode: "ReadWriteMany"
+          size: "2Gi"
+          label: "nfs-storage"
+      - volumes:
+          - name: "echo-service-pv"
+            persistentVolumeClaim:
+              claimName: "echo-service-pv"
+      - volumeMounts:
+          - name: "echo-service-pv"
+            mountPath: "/data"
+            readOnly: false
   - name: traefik
     namespace: default
     chart: traefik/traefik
@@ -169,6 +164,7 @@ releases:
       - clickhouse:
           persistence:
             size: 2Gi
+
   - name: logging-ingress
     namespace: default
     chart: ./signoz-ingress

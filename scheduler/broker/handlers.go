@@ -24,7 +24,7 @@ type Handler struct {
 	executionRepository  *repository.ExecutionRepository
 	serviceRepository    *repository.ServiceRepository
 	executionStepsWriter *kafka.Writer
-	serviceWriter        *kafka.Writer
+	servicesWriters      map[string]*kafka.Writer
 	tracer               trace.Tracer
 }
 
@@ -32,14 +32,14 @@ func NewHandler(
 	executionRepository *repository.ExecutionRepository,
 	serviceRepository *repository.ServiceRepository,
 	executionStepsWriter *kafka.Writer,
-	serviceWriter *kafka.Writer,
+	servicesWriters map[string]*kafka.Writer,
 	tracerProvider trace.TracerProvider,
 ) *Handler {
 	return &Handler{
 		executionRepository,
 		serviceRepository,
 		executionStepsWriter,
-		serviceWriter,
+		servicesWriters,
 		tracerProvider.Tracer("kafka-handlers"),
 	}
 }
@@ -108,9 +108,6 @@ func (h *Handler) PassHeader(ctx context.Context) []kafka.Header {
 	propagator := otel.GetTextMapPropagator()
 	carrier := make(propagation.MapCarrier)
 	propagator.Inject(ctx, carrier)
-	if carrier == nil {
-		return []kafka.Header{}
-	}
 	var headers []kafka.Header = make([]kafka.Header, 0)
 	for k, v := range carrier {
 		headers = append(headers, kafka.Header{
@@ -138,8 +135,8 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 	span.SetAttributes(attribute.String("Task", step.Task))
 	span.SetAttributes(attribute.String("Step", step.Name))
 
-	config := h.serviceRepository.GetService(step.Service)
-	if config == nil {
+	config, err := h.serviceRepository.GetService(step.Service)
+	if err != nil {
 		log.Printf("Service not found: %s\n", step.Service)
 		span.RecordError(fmt.Errorf("service not found: %s", step.Service))
 		return
@@ -173,6 +170,7 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 	for arg, key := range step.Input {
 		isArgs := argsMatcher.MatchString(key)
 		existMapping := true
+		fmt.Println("inputs", arg, key, isArgs)
 		if isArgs {
 			argKey := strings.Replace(key, "$args.", "", 1)
 			result, ok := argsMap[argKey]
@@ -198,7 +196,7 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 			return
 		}
 	}
-
+	fmt.Println("Found inputs", inputs)
 	if step.Service == "native" {
 		h.HandleNativeStep(step, state, inputs, span, ctx)
 		return
@@ -218,8 +216,13 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 	}
 
 	log.Printf("Sending message: %s\n", message)
+	writer := h.servicesWriters[config.Name]
+	if writer == nil {
+		log.Printf("Writer not found: %s\n", config.Name)
+		return
+	}
 
-	err = ProduceTopicMessage(h.serviceWriter, message, h.PassHeader(ctx), config.Topic)
+	err = ProduceMessage(writer, h.PassHeader(ctx), message)
 	if err != nil {
 		state.Status = repository.FAILED
 		h.executionRepository.UpdateState(context.Background(), state)
@@ -231,139 +234,23 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 	h.executionRepository.UpdateState(context.Background(), state)
 }
 
-func (h *Handler) HandleNativeStep(step repository.ExecutionStepDTO, state *repository.State, inputs map[string]interface{}, span trace.Span, ctx context.Context) {
-	execution := h.executionRepository.GetExecutionById(state.ExecutionID)
-
-	switch step.Task {
-	case "if":
-		{
-			leftValue, leftOk := inputs["leftValue"]
-			rightValue, rightOk := inputs["rightValue"]
-			operator, opOk := inputs["operator"]
-			onTruePath, onTrueOk := inputs["onTrue"]
-			onFalsePath, onFalseOk := inputs["onFalse"]
-
-			values := [...]bool{leftOk, rightOk, opOk, onTrueOk, onFalseOk}
-			valuesName := [...]string{"leftValue", "rightValue", "operator", "onTrue", "onFalse"}
-
-			failed := make([]string, 0)
-			for i, value := range values {
-				if !value {
-					failed = append(failed, valuesName[i])
-				}
-			}
-			if len(failed) > 0 {
-				state.Status = repository.FAILED
-				state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
-					Key:   "error",
-					Value: fmt.Sprintf("Following required properties are not specified %s", strings.Join(failed, ",")),
-				})
-				h.executionRepository.UpdateState(context.Background(), state)
-				return
-			}
-
-			// Evaluate condition
-			var evalPath string
-			var evalResult bool
-			if operator == "==" {
-				evalResult = leftValue == rightValue
-				if evalResult {
-					evalPath = onTruePath.(string)
-				} else {
-					evalPath = onFalsePath.(string)
-				}
-			} else if operator == "!=" {
-				evalResult = leftValue != rightValue
-				if evalResult {
-					evalPath = onFalsePath.(string)
-				} else {
-					evalPath = onTruePath.(string)
-				}
-			} else {
-				state.Status = repository.FAILED
-				state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
-					Key:   "error",
-					Value: fmt.Sprintf("%s is not a valid operator", operator),
-				})
-				h.executionRepository.UpdateState(context.Background(), state)
-				return
-			}
-
-			steps := execution.Steps
-			var currentStep *repository.Step
-			var nextStep *repository.Step
-			var inmediateNextStep *repository.Step
-			for _, value := range steps {
-				if evalPath == value.Name {
-					nextStep = value
-				}
-				if currentStep != nil {
-					inmediateNextStep = value
-				}
-				if value.Name == step.Name {
-					currentStep = value
-				}
-			}
-
-			if evalPath == "continue" {
-				nextStep = inmediateNextStep
-			} else if nextStep == nil {
-				// No found path
-				state.Status = repository.FAILED
-				state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
-					Key:   "error",
-					Value: fmt.Sprintf("Path %s is not found", evalPath),
-				})
-				h.executionRepository.UpdateState(context.Background(), state)
-				return
-			}
-
-			// Got to end of steps
-			if nextStep == nil {
-				state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
-					Key:   step.Name + ".result",
-					Value: evalPath,
-				})
-				state.Status = repository.SUCCESS
-			} else {
-				stepToExecute := nextStep.ToExecutionStepDTO()
-
-				//Enqueue the step
-				bytes, err := json.Marshal(stepToExecute)
-				if err != nil {
-					log.Printf("Failed to marshal message: %s\n", err)
-					span.RecordError(err)
-					state.Status = repository.FAILED
-					h.executionRepository.UpdateState(context.Background(), state)
-					return
-				}
-				err = ProduceMessage(h.executionStepsWriter, h.PassHeader(ctx), bytes)
-				if err != nil {
-					log.Printf("Failed to produce message: %s\n", err)
-					state.Status = repository.FAILED
-					h.executionRepository.UpdateState(context.Background(), state)
-					return
-				}
-				state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
-					Key:   step.Name + ".result",
-					Value: evalPath,
-				})
-			}
-		}
-	case "abort":
-		{
-			state.Status = repository.SUCCESS
-		}
-	default:
-		{
-			state.Status = repository.FAILED
-			state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
-				Key:   "error",
-				Value: fmt.Sprintf("%s is not a valid native taskname", step.Task),
-			})
-		}
+func (h *Handler) HandleNativeStep(
+	step repository.ExecutionStepDTO,
+	state *repository.State,
+	inputs map[string]interface{},
+	span trace.Span,
+	ctx context.Context,
+) {
+	handlerMapper := map[string]nativeFn{
+		"abort": h.AbortHandler,
+		"if":    h.ConditionalHandler,
 	}
-	h.executionRepository.UpdateState(context.Background(), state)
+
+	handler, ok := handlerMapper[step.Task]
+	if !ok {
+		handler = h.ErrorHandler
+	}
+	handler(step, state, inputs, span, ctx)
 }
 
 type ServiceResponse struct {
@@ -375,7 +262,7 @@ type ServiceResponse struct {
 func (h *Handler) HandleServiceResponse(message []byte, header []kafka.Header) {
 	ctx, span := h.CreateOrGetSpan("HandleExecutionSubmission", header)
 	defer span.End()
-
+	fmt.Println("Received message from service", string(message))
 	response := ServiceResponse{}
 	err := json.Unmarshal(message, &response)
 	if err != nil {
@@ -413,7 +300,7 @@ func (h *Handler) HandleServiceResponse(message []byte, header []kafka.Header) {
 		return
 	}
 	for k, v := range response.Outputs {
-		state.Outputs = append(state.Outputs, &repository.KeyValueOutput{Key: k, Value: v.(string)})
+		state.Outputs = append(state.Outputs, &repository.KeyValueOutput{Key: fmt.Sprintf("%s.%s", state.Step, k), Value: v.(string)})
 	}
 	//Check if all steps are done
 	var nextStepIndex int

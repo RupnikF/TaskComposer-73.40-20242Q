@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"scheduler/broker"
 	"scheduler/repository"
 
+	"github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -24,19 +27,19 @@ import (
 )
 
 var (
-	serviceName  = os.Getenv("SERVICE_NAME")
-	collectorURL = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	serviceName      = os.Getenv("SERVICE_NAME")
+	grpcCollectorURL = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT_GRPC")
 )
 
 func initTracer() func(context.Context) error {
 	secureOption := otlptracegrpc.WithInsecure()
 
-	log.Printf("COLLECTOR_ENDPOINT" + collectorURL)
+	log.Printf("COLLECTOR_ENDPOINT_GRPC" + grpcCollectorURL)
 	exporter, err := otlptrace.New(
 		context.Background(),
 		otlptracegrpc.NewClient(
 			secureOption,
-			otlptracegrpc.WithEndpoint(collectorURL),
+			otlptracegrpc.WithEndpoint(grpcCollectorURL),
 		),
 	)
 
@@ -61,7 +64,6 @@ func initTracer() func(context.Context) error {
 			sdktrace.WithResource(resources),
 		),
 	)
-
 	return exporter.Shutdown
 }
 
@@ -86,7 +88,6 @@ func initLogger() (context.Context, *setupLog.LoggerProvider) {
 }
 
 func main() {
-	HostPort := os.Getenv("HOST_PORT")
 
 	ctx, lp := initLogger()
 	defer lp.Shutdown(ctx)
@@ -136,9 +137,18 @@ func main() {
 
 	kafkaHost := []string{os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")}
 	executionStepsWriter := broker.GetWriter(kafkaHost, broker.GetStepKafkaTopic())
-	serviceWriter := broker.GetGenericWriter(kafkaHost)
+
+	serviceWriters := make(map[string]*kafka.Writer)
+	for _, service := range serviceRepository.GetServices() {
+		fmt.Printf("Service: %v\n", service.Name)
+		if service.Server == "" {
+			log.Printf("Service %s has no server", service.Name)
+			continue
+		}
+		serviceWriters[service.Name] = broker.GetWriter([]string{service.Server}, service.InputTopic)
+	}
 	tp := otel.GetTracerProvider()
-	handler := broker.NewHandler(executionRepository, serviceRepository, executionStepsWriter, serviceWriter, tp)
+	handler := broker.NewHandler(executionRepository, serviceRepository, executionStepsWriter, serviceWriters, tp)
 
 	executionReader := broker.GetExecutionReader()
 
@@ -155,17 +165,21 @@ func main() {
 		-1,
 		handler.HandleExecutionStep,
 	)
-	serviceHost := os.Getenv("SERVICE_HOST") + ":" + os.Getenv("NATIVE_PORT")
-	nativeTopic := os.Getenv("NATIVE_OUTPUT_TOPIC")
-	nativeServiceReader := broker.GetReader([]string{serviceHost}, nativeTopic, "native-service")
-	go broker.ConsumeMessageWithHandler(
-		nativeServiceReader,
-		-1,
-		handler.HandleServiceResponse,
-	)
+	for _, service := range serviceRepository.GetServices() {
+		if service.Server == "" {
+			continue
+		}
+		serviceReader := broker.GetReader([]string{service.Server}, service.OutputTopic, service.Name)
 
-	init.Info("Running at ", HostPort)
-	err := r.Run(HostPort)
+		fmt.Printf("Listening for topic %s\n", service.OutputTopic)
+		go broker.ConsumeMessageWithHandler(
+			serviceReader,
+			-1,
+			handler.HandleServiceResponse,
+		)
+	}
+	init.Info("Starting scheduler")
+	err := r.Run()
 	if err != nil {
 		return
 	} // listen and serve on 0.0.0.0:8080

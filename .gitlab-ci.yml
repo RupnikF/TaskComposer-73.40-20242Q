@@ -1,11 +1,13 @@
 stages:
 - pipeline
 - test
+- deploy
 
 run-scheduler-pipeline:
   stage: pipeline
   trigger:
     include: scheduler/.gitlab-ci.yml
+    strategy: depend
   rules:
     - changes:
         - scheduler/*
@@ -15,6 +17,7 @@ run-service-registry-pipeline:
   stage: pipeline
   trigger:
     include: service-registry/.gitlab-ci.yml
+    strategy: depend
   rules:
     - changes:
         - service-registry/*
@@ -24,9 +27,20 @@ run-workflow-manager-pipeline:
   stage: pipeline
   trigger:
     include: workflow-manager/.gitlab-ci.yml
+    strategy: depend
   rules:
     - changes:
         - workflow-manager/*
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+run-echo-service-pipeline:
+  stage: pipeline
+  trigger:
+    include: echo-service/.gitlab-ci.yml
+    strategy: depend
+  rules:
+    - changes:
+        - echo-service/*
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 e2e-test:
@@ -37,6 +51,33 @@ e2e-test:
   - job: run-scheduler-pipeline
   - job: run-service-registry-pipeline
   - job: run-workflow-manager-pipeline
+  - job: run-echo-service-pipeline
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
+deploy-to-aws:
+  stage: deploy
+  image:
+    name: ghcr.io/helmfile/helmfile:latest
+    entrypoint: [""] # Override the default entrypoint
+  script:
+    # Move the config file to the helm directory to connecto to AWS kubectl
+    - mkdir -p /helm/.kube
+    - cp $KUBE_CONFIG_FILE /helm/.kube/config
+    - cd ${CI_PROJECT_DIR}/deploy
+    - echo "Install dependencies"
+    - helmfile init --interactive=false
+    - kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v2.10/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml
+    - kubectl apply -f https://raw.githubusercontent.com/Altinity/clickhouse-operator/master/deploy/operator/clickhouse-operator-install-bundle.yaml
+    - echo "Deploy to AWS"
+    - helmfile apply
+  needs:
+    - job: run-scheduler-pipeline
+    - job: run-service-registry-pipeline
+    - job: run-workflow-manager-pipeline
+    - job: run-echo-service-pipeline
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_MANUAL_DEPLOYMENT == "true" #So it runs when you manually run the pipeline
+  when: manual
+  allow_failure: false  # Prevent pipeline continuation without approval

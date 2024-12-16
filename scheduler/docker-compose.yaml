@@ -5,11 +5,9 @@ services:
       - "8080:8080"
     depends_on:
       - db
-      - cache
       - broker
     networks:
       - db-network
-      - redis-network
       - bus-network
     env_file:
       - .env.docker
@@ -26,14 +24,6 @@ services:
     networks:
       - db-network
       - default
-  cache:
-    image: "redis"
-    env_file:
-      - .env.docker
-    networks:
-      - redis-network
-    volumes:
-      - cache-data:/data
   broker:
     image: apache/kafka:latest
     container_name: broker
@@ -54,8 +44,6 @@ networks:
     driver: bridge
   bus-network:
     driver: bridge
-  redis-network:
-    internal: true
 
 volumes:
   db-data:

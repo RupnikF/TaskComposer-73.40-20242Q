@@ -10,6 +10,9 @@ import java.util.Set;
 public class ServiceRepositoryImpl implements ServiceRepository{
     @Override
     public Optional<Service> getServiceByName(String name) {
+        if (name.equals("native")) {
+            return Optional.of(new Service("native", Set.of("if", "abort")));
+        }
         return Optional.of(new Service("echo", Set.of("echo")));
     }
 }
