@@ -59,7 +59,7 @@ deploy-to-aws:
   stage: deploy
   image:
     name: ghcr.io/helmfile/helmfile:latest
-    entrypoint: ["/bin/sh"] # Override the default entrypoint
+    entrypoint: [""] # Override the default entrypoint
   script:
     # Move the config file to the helm directory to connecto to AWS kubectl
     - cp $KUBE_CONFIG_FILE /helm/.kube/config
