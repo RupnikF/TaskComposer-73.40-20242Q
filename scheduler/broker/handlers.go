@@ -144,6 +144,11 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 
 	state := h.executionRepository.GetStateByExecutionID(step.ExecutionID)
 
+	if state.Status != repository.PENDING {
+		log.Printf("Execution not pending: %s\n", state.Status)
+		span.RecordError(fmt.Errorf("execution not pending: %s", state.Status))
+		return
+	}
 	argsMatcher := regexp.MustCompile(`\$args\.(.+)`)
 	// Build corresponding inputs
 	argsMap := make(map[string]interface{})
@@ -278,6 +283,11 @@ func (h *Handler) HandleServiceResponse(message []byte, header []kafka.Header) {
 		return
 	}
 	state := execution.State
+	if state.Status != repository.EXECUTING {
+		log.Printf("Execution not executing: %s\n", state.Status)
+		span.RecordError(fmt.Errorf("execution not executing: %s", state.Status))
+		return
+	}
 	outputErr := response.Outputs["error"]
 	if outputErr != nil {
 		execution.State.Status = repository.FAILED

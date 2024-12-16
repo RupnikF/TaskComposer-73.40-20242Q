@@ -113,7 +113,14 @@ func main() {
 	// Initialize the repository and broker
 	executionRepository := repository.NewExecutionRepository(repository.Initialize())
 	serviceRepository := repository.NewServiceRepository()
-	broker.Initialize()
+	serviceTopics := make([]string, 0)
+	for _, service := range serviceRepository.GetServices() {
+		if service.Server == "" {
+			continue
+		}
+		serviceTopics = append(serviceTopics, service.OutputTopic, service.InputTopic)
+	}
+	broker.Initialize(serviceTopics)
 
 	r := gin.Default()
 	r.Use(otelgin.Middleware(serviceName))
@@ -133,6 +140,49 @@ func main() {
 			return
 		}
 		c.JSON(200, state.ToResponseStateDTO())
+	})
+	r.POST("/cancel-execution/:uuid", func(c *gin.Context) {
+		stringUUID := c.Param("uuid")
+		execution := executionRepository.GetExecutionByUUID(stringUUID)
+		if execution == nil {
+			c.JSON(404, gin.H{
+				"error": "execution not found",
+			})
+			return
+		}
+		if execution.State.Status != repository.PENDING && execution.State.Status != repository.EXECUTING {
+			c.JSON(400, gin.H{
+				"error": "execution already finished",
+			})
+			return
+		}
+		executionRepository.CancelExecution(c, execution)
+		c.JSON(200, gin.H{
+			"message": "execution cancelled",
+		})
+	})
+	r.POST("/cancel-execution", func(c *gin.Context) {
+		var cancelRequest repository.CancelTagsDTO
+		err := c.BindJSON(&cancelRequest)
+		if err != nil {
+			c.JSON(400, gin.H{
+				"error": "Invalid request, error parsing tags",
+			})
+			return
+		}
+		executions := executionRepository.GetExecutionsByTags(c, cancelRequest.Tags)
+		if executions == nil || len(executions) == 0 {
+			c.JSON(404, gin.H{
+				"error": "No executions to cancel found",
+			})
+			return
+		}
+		for _, execution := range executions {
+			executionRepository.CancelExecution(c, execution)
+		}
+		c.JSON(200, gin.H{
+			"message": fmt.Sprintf("cancelled %d executions", len(executions)),
+		})
 	})
 
 	kafkaHost := []string{os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")}

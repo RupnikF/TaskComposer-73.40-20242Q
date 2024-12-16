@@ -2,14 +2,14 @@ package repository
 
 import "log"
 
-type SubmisssionStepDTO struct {
+type SubmissionStepDTO struct {
 	Service string            `json:"service"`
 	Name    string            `json:"name"`
 	Task    string            `json:"task"`
 	Input   map[string]string `json:"input"`
 }
 
-func (s *SubmisssionStepDTO) ToStep(stepIndex int) Step {
+func (s *SubmissionStepDTO) ToStep(stepIndex int) Step {
 	inputs := make([]*KeyValueStep, len(s.Input))
 	i := 0
 	for k, v := range s.Input {
@@ -29,13 +29,13 @@ func (s *SubmisssionStepDTO) ToStep(stepIndex int) Step {
 }
 
 type ExecutionSubmissionDTO struct {
-	WorkflowName  string               `json:"workflowName"`
-	WorkflowID    uint                 `json:"workflowID"`
-	ExecutionUUID string               `json:"ExecutionUUID"`
-	Tags          []string             `json:"tags"`
-	Parameters    map[string]string    `json:"parameters"`
-	Arguments     map[string]string    `json:"args"`
-	Steps         []SubmisssionStepDTO `json:"steps"`
+	WorkflowName  string              `json:"workflowName"`
+	WorkflowID    uint                `json:"workflowID"`
+	ExecutionUUID string              `json:"ExecutionUUID"`
+	Tags          []string            `json:"tags"`
+	Parameters    map[string]string   `json:"parameters"`
+	Arguments     map[string]string   `json:"args"`
+	Steps         []SubmissionStepDTO `json:"steps"`
 }
 
 func (e ExecutionSubmissionDTO) ToExecution(status string) *Execution {
@@ -57,7 +57,7 @@ func (e ExecutionSubmissionDTO) ToExecution(status string) *Execution {
 
 	steps := make([]*Step, len(e.Steps))
 	if e.Steps == nil {
-		e.Steps = make([]SubmisssionStepDTO, 0)
+		e.Steps = make([]SubmissionStepDTO, 0)
 	}
 	for i, s := range e.Steps {
 		step := s.ToStep(i)
@@ -73,10 +73,16 @@ func (e ExecutionSubmissionDTO) ToExecution(status string) *Execution {
 		Outputs:   outputs,
 		Arguments: arguments,
 	}
+	tags := make([]*Tags, len(e.Tags))
+	for i, t := range e.Tags {
+		tags[i] = &Tags{
+			Tag: t,
+		}
+	}
 
 	return &Execution{
-		WorkflowID: e.WorkflowID,
-		// Tags:       e.Tags,
+		WorkflowID:    e.WorkflowID,
+		Tags:          tags,
 		Params:        &params,
 		Steps:         steps,
 		State:         &state,
@@ -97,4 +103,8 @@ type ExecutionStateResponseDTO struct {
 	Step    string                 `json:"step"`
 	Status  string                 `json:"status"`
 	Outputs map[string]interface{} `json:"outputs"`
+}
+
+type CancelTagsDTO struct {
+	Tags []string `json:"tags"`
 }

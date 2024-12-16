@@ -12,6 +12,7 @@ const (
 	EXECUTING string = "EXECUTING"
 	SUCCESS   string = "SUCCESS"
 	FAILED    string = "FAILED"
+	CANCELLED string = "CANCELLED"
 )
 
 type KeyValueOutput struct {
@@ -82,13 +83,17 @@ type State struct {
 	Outputs     []*KeyValueOutput
 	Arguments   []*KeyValueArgument
 }
-
+type Tags struct {
+	gorm.Model
+	ExecutionID uint
+	Tag         string
+}
 type Execution struct {
 	gorm.Model
 	WorkflowID    uint
 	ExecutionUUID string `gorm:"type:varchar(64)"`
-	// Tags       []string `gorm:"type:varchar(64)[]" json:"tags"`
-	State  *State
-	Steps  []*Step
-	Params *ExecutionParams
+	Tags          []*Tags
+	State         *State
+	Steps         []*Step
+	Params        *ExecutionParams
 }

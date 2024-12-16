@@ -55,7 +55,7 @@ func GetStepKafkaTopic() string {
 	return os.Getenv("STEPS_TOPIC")
 }
 
-func Initialize() {
+func Initialize(serviceTopics []string) {
 
 	bootstrapServers := os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")
 
@@ -99,6 +99,13 @@ func Initialize() {
 			NumPartitions:     1,
 			ReplicationFactor: 1,
 		},
+	}
+	for _, topic := range serviceTopics {
+		topicConfigs = append(topicConfigs, kafka.TopicConfig{
+			Topic:             topic,
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		})
 	}
 
 	err = controllerConn.CreateTopics(topicConfigs...)

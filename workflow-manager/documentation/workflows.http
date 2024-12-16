@@ -13,7 +13,7 @@ args:
       default: "value"
 steps:
   - echo1:
-      service: "echo-service" # (default)
+      service: "echo_service" # (default)
       task: "echo"
       input:
         msg: "$args.property1"
@@ -30,7 +30,7 @@ steps:
       service: "native"
       task: "abort"
   - echo2:
-      service: "echo-service"
+      service: "echo_service"
       task: "echo"
       input:
         msg: "check-property.result"
@@ -41,12 +41,12 @@ steps:
 GET {{baseWorkflowManager}}/workflows
 
 ###
-POST {{baseWorkflowManager}}/executions
+POST {{baseWorkflowManager}}/triggers
 Content-Type: application/json
 
 {
   "workflowName": "IFTEST",
-  "tags": [],
+  "tags": ["hola","chau"],
   "parameters": {},
   "args": {
     "property1": "asd",
@@ -55,7 +55,7 @@ Content-Type: application/json
 }
 
 ###
-POST {{baseWorkflowManager}}/executions
+POST {{baseWorkflowManager}}/triggers
 Content-Type: application/json
 
 {
@@ -74,4 +74,15 @@ Content-Type: application/json
 GET http://localhost:8080/healthcheck
 
 ###
-GET {{baseScheduler}}/executions/0d98d052-8f27-42a3-b534-785b38f30cc8
+GET {{baseScheduler}}/executions/da0f328e-3915-49b2-a416-0865427a649c
+
+###
+POST {{baseScheduler}}/cancel-execution/da0f328e-3915-49b2-a416-0865427a649c
+
+###
+POST {{baseScheduler}}/cancel-execution/
+Content-Type: application/json
+
+{
+  "tags": ["hola","chau"]
+}

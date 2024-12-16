@@ -55,3 +55,29 @@ func (r *ExecutionRepository) GetStateByExecutionID(executionID uint) *State {
 	}
 	return &state
 }
+func (r *ExecutionRepository) CancelExecution(ctx context.Context, execution *Execution) {
+	execution.State.Status = CANCELLED
+	r.UpdateState(ctx, execution.State)
+}
+func (r *ExecutionRepository) GetExecutionsByTags(ctx context.Context, tags []string) []*Execution {
+	var executions []Execution
+	tx := r.db.WithContext(ctx).Preload("State").Preload("Tags").Find(&executions)
+	if tx.Error != nil {
+		log.Printf("Failed to get executions: %v", tx.Error)
+	}
+	var outputExecutions []*Execution
+	for _, execution := range executions {
+		if execution.State.Status == PENDING || execution.State.Status == EXECUTING {
+		tagsSearch:
+			for _, tag := range tags {
+				for _, executionTag := range execution.Tags {
+					if executionTag.Tag == tag {
+						outputExecutions = append(outputExecutions, &execution)
+						break tagsSearch
+					}
+				}
+			}
+		}
+	}
+	return outputExecutions
+}

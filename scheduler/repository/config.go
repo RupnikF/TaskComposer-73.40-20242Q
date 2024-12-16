@@ -23,7 +23,7 @@ func Initialize() *gorm.DB {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	// Run migrations
-	err = connection.AutoMigrate(&Execution{}, &State{}, &Step{}, &KeyValueOutput{}, &KeyValueArgument{}, &KeyValueStep{}, &ExecutionParams{})
+	err = connection.AutoMigrate(&Execution{}, &State{}, &Step{}, &KeyValueOutput{}, &KeyValueArgument{}, &KeyValueStep{}, &ExecutionParams{}, &Tags{})
 	if err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
