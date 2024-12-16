@@ -6,6 +6,7 @@ run-scheduler-pipeline:
   stage: pipeline
   trigger:
     include: scheduler/.gitlab-ci.yml
+    strategy: depend
   rules:
     - changes:
         - scheduler/*
@@ -15,6 +16,7 @@ run-service-registry-pipeline:
   stage: pipeline
   trigger:
     include: service-registry/.gitlab-ci.yml
+    strategy: depend
   rules:
     - changes:
         - service-registry/*
@@ -24,6 +26,7 @@ run-workflow-manager-pipeline:
   stage: pipeline
   trigger:
     include: workflow-manager/.gitlab-ci.yml
+    strategy: depend
   rules:
     - changes:
         - workflow-manager/*
@@ -33,6 +36,7 @@ run-echo-service-pipeline:
   stage: pipeline
   trigger:
     include: echo-service/.gitlab-ci.yml
+    strategy: depend
   rules:
     - changes:
         - echo-service/*
