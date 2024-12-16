@@ -77,5 +77,6 @@ deploy-to-aws:
     - job: run-echo-service-pipeline
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_MANUAL_DEPLOYMENT == "true" #So it runs when you manually run the pipeline
   when: manual
   allow_failure: false  # Prevent pipeline continuation without approval
