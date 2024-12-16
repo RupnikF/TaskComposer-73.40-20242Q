@@ -36,7 +36,7 @@ public class Step {
     @Column(name = "step_order", nullable = false)
     private Integer stepOrder;
 
-    @OneToMany(mappedBy = "step", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "step", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<StepInput> stepInputs;
 
 }
