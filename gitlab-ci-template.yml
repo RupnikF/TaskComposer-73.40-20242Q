@@ -126,13 +126,3 @@ deliver-to-registry:
     artifacts: true
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
-
-deploy-chart:
-  stage: deploy
-  script:
-  - echo "Deploy chart to environment"
-  needs:
-  - job: deliver-to-registry
-    artifacts: true
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
