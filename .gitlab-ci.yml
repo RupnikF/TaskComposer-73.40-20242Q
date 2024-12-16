@@ -62,6 +62,7 @@ deploy-to-aws:
     entrypoint: [""] # Override the default entrypoint
   script:
     # Move the config file to the helm directory to connecto to AWS kubectl
+    - mkdir -p /helm/.kube
     - cp $KUBE_CONFIG_FILE /helm/.kube/config
     - cd ${CI_PROJECT_DIR}/deploy
     - echo "Install dependencies"
