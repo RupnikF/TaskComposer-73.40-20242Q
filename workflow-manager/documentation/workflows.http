@@ -1,5 +1,8 @@
+@baseScheduler=http://localhost:8080
+@baseWorkflowManager=http://localhost:8081
+
 ###
-POST http://localhost:8081/workflows
+POST {{baseWorkflowManager}}/workflows
 Content-Type: application/yaml
 
 name: "IFTEST"
@@ -35,10 +38,10 @@ steps:
 
 
 ###
-GET http://localhost:8081/workflows
+GET {{baseWorkflowManager}}/workflows
 
 ###
-POST http://localhost:8081/executions
+POST {{baseWorkflowManager}}/executions
 Content-Type: application/json
 
 {
@@ -46,17 +49,17 @@ Content-Type: application/json
   "tags": [],
   "parameters": {},
   "args": {
-    "property1": "hola",
+    "property1": "asd",
     "property2": "chau"
   }
 }
 
 ###
-POST http://localhost:8081/executions
+POST {{baseWorkflowManager}}/executions
 Content-Type: application/json
 
 {
-  "workflowName": "C workflow",
+  "workflowName": "IFTEST",
   "tags": [],
   "parameters": {},
   "args": {
@@ -71,4 +74,4 @@ Content-Type: application/json
 GET http://localhost:8080/healthcheck
 
 ###
-GET http://localhost:8080/executions/1
+GET {{baseScheduler}}/executions/0d98d052-8f27-42a3-b534-785b38f30cc8

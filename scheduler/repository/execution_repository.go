@@ -2,8 +2,9 @@ package repository
 
 import (
 	"context"
-	"gorm.io/gorm"
 	"log"
+
+	"gorm.io/gorm"
 )
 
 type ExecutionRepository struct {
@@ -24,7 +25,7 @@ func (r *ExecutionRepository) CreateExecution(ctx context.Context, execution *Ex
 
 func (r *ExecutionRepository) GetExecutionById(id uint) *Execution {
 	execution := Execution{}
-	tx := r.db.Preload("State").Preload("Steps").Preload("State.Outputs").First(&execution, id)
+	tx := r.db.Preload("State").Preload("Steps").Preload("Steps.Inputs").Preload("State.Outputs").First(&execution, id)
 	if tx.Error != nil {
 		log.Printf("Failed to get execution: %v", tx.Error)
 	}

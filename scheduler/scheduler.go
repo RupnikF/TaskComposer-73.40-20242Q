@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/segmentio/kafka-go"
-	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"log"
 	"os"
 	"scheduler/broker"
 	"scheduler/repository"
+
+	"github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -169,6 +170,8 @@ func main() {
 			continue
 		}
 		serviceReader := broker.GetReader([]string{service.Server}, service.OutputTopic, service.Name)
+
+		fmt.Printf("Listening for topic %s\n", service.OutputTopic)
 		go broker.ConsumeMessageWithHandler(
 			serviceReader,
 			-1,

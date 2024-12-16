@@ -27,7 +27,6 @@ func (h *Handler) ConditionalHandler(
 	ctx context.Context,
 ) {
 	execution := h.executionRepository.GetExecutionById(state.ExecutionID)
-
 	leftValue, leftOk := inputs["leftValue"]
 	rightValue, rightOk := inputs["rightValue"]
 	operator, opOk := inputs["operator"]
@@ -113,7 +112,7 @@ func (h *Handler) ConditionalHandler(
 	if nextStep == nil {
 		state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
 			Key:   step.Name + ".result",
-			Value: evalPath,
+			Value: fmt.Sprintf("%t", evalResult),
 		})
 		state.Status = repository.SUCCESS
 	} else {
@@ -135,9 +134,10 @@ func (h *Handler) ConditionalHandler(
 			h.executionRepository.UpdateState(context.Background(), state)
 			return
 		}
+		state.Step = nextStep.Name
 		state.Outputs = append(state.Outputs, &repository.KeyValueOutput{
 			Key:   step.Name + ".result",
-			Value: evalPath,
+			Value: fmt.Sprintf("%t", evalResult),
 		})
 	}
 	h.executionRepository.UpdateState(context.Background(), state)

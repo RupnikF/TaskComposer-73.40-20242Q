@@ -2,6 +2,7 @@ package repository
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 )
@@ -32,10 +33,11 @@ func NewServiceRepository() *ServiceRepository {
 	}
 	return &serviceRepository
 }
+
 func (sr *ServiceRepository) GetService(name string) (Service, error) {
 	service, ok := sr.Services[name]
 	if !ok {
-		return Service{}, nil
+		return Service{}, fmt.Errorf("service not found: %s", name)
 	}
 	return service, nil
 }

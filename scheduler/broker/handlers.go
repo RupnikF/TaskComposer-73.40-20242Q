@@ -108,9 +108,6 @@ func (h *Handler) PassHeader(ctx context.Context) []kafka.Header {
 	propagator := otel.GetTextMapPropagator()
 	carrier := make(propagation.MapCarrier)
 	propagator.Inject(ctx, carrier)
-	if carrier == nil {
-		return []kafka.Header{}
-	}
 	var headers []kafka.Header = make([]kafka.Header, 0)
 	for k, v := range carrier {
 		headers = append(headers, kafka.Header{
@@ -173,6 +170,7 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 	for arg, key := range step.Input {
 		isArgs := argsMatcher.MatchString(key)
 		existMapping := true
+		fmt.Println("inputs", arg, key, isArgs)
 		if isArgs {
 			argKey := strings.Replace(key, "$args.", "", 1)
 			result, ok := argsMap[argKey]
@@ -198,7 +196,7 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 			return
 		}
 	}
-
+	fmt.Println("Found inputs", inputs)
 	if step.Service == "native" {
 		h.HandleNativeStep(step, state, inputs, span, ctx)
 		return
@@ -224,7 +222,7 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 		return
 	}
 
-	err = ProduceTopicMessage(writer, message, h.PassHeader(ctx), config.InputTopic)
+	err = ProduceMessage(writer, h.PassHeader(ctx), message)
 	if err != nil {
 		state.Status = repository.FAILED
 		h.executionRepository.UpdateState(context.Background(), state)
@@ -264,7 +262,7 @@ type ServiceResponse struct {
 func (h *Handler) HandleServiceResponse(message []byte, header []kafka.Header) {
 	ctx, span := h.CreateOrGetSpan("HandleExecutionSubmission", header)
 	defer span.End()
-
+	fmt.Println("Received message from service", string(message))
 	response := ServiceResponse{}
 	err := json.Unmarshal(message, &response)
 	if err != nil {
@@ -302,7 +300,7 @@ func (h *Handler) HandleServiceResponse(message []byte, header []kafka.Header) {
 		return
 	}
 	for k, v := range response.Outputs {
-		state.Outputs = append(state.Outputs, &repository.KeyValueOutput{Key: k, Value: v.(string)})
+		state.Outputs = append(state.Outputs, &repository.KeyValueOutput{Key: fmt.Sprintf("%s.%s", state.Step, k), Value: v.(string)})
 	}
 	//Check if all steps are done
 	var nextStepIndex int

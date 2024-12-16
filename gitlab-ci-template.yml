@@ -38,8 +38,9 @@ build-images:
   stage: build
   image:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
-    entrypoint: [ "" ] # EntryPoint needs to be overridden because it's a shell otherwise
+    entrypoint: [ "" ]
   script:
+    - cp ${CI_PROJECT_DIR}/services.json ${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]
     - /kaniko/executor
       --dockerfile "${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]/Dockerfile"
       --context "${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]"
