@@ -43,6 +43,16 @@ run-echo-service-pipeline:
         - echo-service/*
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
+run-s3-service-pipeline:
+  stage: pipeline
+  trigger:
+    include: s3-service/.gitlab-ci.yml
+    strategy: depend
+  rules:
+    - changes:
+        - s3-service/*
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
 e2e-test:
   stage: test
   script:
@@ -52,6 +62,7 @@ e2e-test:
   - job: run-service-registry-pipeline
   - job: run-workflow-manager-pipeline
   - job: run-echo-service-pipeline
+  - job: run-s3-service-pipeline
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
@@ -76,6 +87,7 @@ deploy-to-aws:
     - job: run-service-registry-pipeline
     - job: run-workflow-manager-pipeline
     - job: run-echo-service-pipeline
+    - job: run-s3-service-pipeline
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_MANUAL_DEPLOYMENT == "true" #So it runs when you manually run the pipeline

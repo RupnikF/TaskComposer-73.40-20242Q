@@ -1,0 +1,6 @@
+include:
+  - local: 'gitlab-ci-template.yml'
+    inputs:
+      microservice-name: 's3-service'
+      directory-name: 's3-service'
+      environment: 'dev'
