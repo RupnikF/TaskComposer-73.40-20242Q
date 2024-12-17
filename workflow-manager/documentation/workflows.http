@@ -22,10 +22,10 @@ steps:
       task: "if"
       input:
         leftValue: "echo1.msg"
-        rightValue: "value"
+        rightValue: "$args.property2"
         operator: "=="
-        onTrue: "continue"
-        onFalse: "echo2"
+        onTrue: "echo2"
+        onFalse: "continue"
   - premature:
       service: "native"
       task: "abort"
@@ -39,6 +39,9 @@ steps:
 
 ###
 GET {{baseWorkflowManager}}/workflows
+
+###
+DELETE {{baseWorkflowManager}}/workflows/5
 
 ###
 POST {{baseWorkflowManager}}/triggers

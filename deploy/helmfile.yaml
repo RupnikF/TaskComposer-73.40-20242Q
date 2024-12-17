@@ -5,6 +5,8 @@ repositories:
     url: https://traefik.github.io/charts
   - name: signoz
     url: https://charts.signoz.io
+#  - name: ingress-nginx
+#    url: https://kubernetes.github.io/ingress-nginx
 
 releases:
   # Scheduler
@@ -144,6 +146,16 @@ releases:
     chart: traefik/traefik
     values:
       - traefik.yaml
+#  - name: grpc-ingress
+#    namespace: default
+#    chart: ingress-nginx/ingress-nginx
+#    values:
+#      - controller:
+#          service:
+#            type: NodePort
+#            nodePorts:
+#              http: 31080
+#              https: 31443
   - name: shared-nfs
     namespace: default
     chart: ./nfs-pv

@@ -12,9 +12,16 @@ spec:
       name: workflow-manager
       port: 8080
   - kind: Rule
-    match: PathPrefix(`/executions`) && Method(`POST`)
+    match: PathPrefix(`/triggers`) && Method(`POST`)
     services:                       
     - kind: Service
       name: workflow-manager
-      port: 8080                         
+      port: 8080         
+  - kind: Rule
+    match: Header(`Content-Type`, `application/grpc-web`)
+    services:
+    - kind: Service
+      name: workflow-manager-grpc
+      port: 9090  
+    scheme: h2c
    

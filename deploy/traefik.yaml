@@ -52,7 +52,8 @@ podSecurityContext:
 additionalArguments:
   - "--api.insecure=true"       # Enable the dashboard without authentication
   - "--api.dashboard=true"
-  - "--entrypoints.web.address=:80"
+  - "--entryPoints.web.address=:80"
+  - "--entryPoints.web.http.http2.enabled=true"
   - "--entrypoints.websecure.address=:443"
   - "--providers.kubernetescrd.allowCrossNamespace=true"
 
