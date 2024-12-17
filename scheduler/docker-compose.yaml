@@ -9,6 +9,7 @@ services:
     networks:
       - db-network
       - bus-network
+      - etcd-network
     env_file:
       - .env.docker
     environment:
@@ -38,14 +39,28 @@ services:
       - bus-network
     environment:
       HOSTNAME_COMMAND: "route -n | awk '/UG[ \t]/{print $$2}'"
+  etcd:
+    image: bitnami/etcd:latest
+    env_file:
+      - .env.etcd
+    volumes:
+        - etcd-data:/bitnami/etcd
+    networks:
+        - etcd-network
+        - default
+    ports:
+      - "2379:2379"
+      - "2380:2380"
 
 networks:
   db-network:
     driver: bridge
   bus-network:
     driver: bridge
+  etcd-network:
+    driver: bridge
 
 volumes:
   db-data:
-  cache-data:
+  etcd-data:
   broker-data:

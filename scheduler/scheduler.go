@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"scheduler/broker"
+	"scheduler/jobs"
 	"scheduler/repository"
 
 	"github.com/segmentio/kafka-go"
@@ -120,6 +121,7 @@ func main() {
 		}
 		serviceTopics = append(serviceTopics, service.OutputTopic, service.InputTopic)
 	}
+	jobsRepository := jobs.Initialize()
 	broker.Initialize(serviceTopics)
 
 	r := gin.Default()
@@ -150,6 +152,7 @@ func main() {
 			})
 			return
 		}
+		jobsRepository.CancelJob(stringUUID)
 		if execution.State.Status != repository.PENDING && execution.State.Status != repository.EXECUTING {
 			c.JSON(400, gin.H{
 				"error": "execution already finished",
@@ -198,7 +201,7 @@ func main() {
 		serviceWriters[service.Name] = broker.GetWriter([]string{service.Server}, service.InputTopic)
 	}
 	tp := otel.GetTracerProvider()
-	handler := broker.NewHandler(executionRepository, serviceRepository, executionStepsWriter, serviceWriters, tp)
+	handler := broker.NewHandler(executionRepository, serviceRepository, executionStepsWriter, serviceWriters, tp, jobsRepository)
 
 	executionReader := broker.GetExecutionReader()
 

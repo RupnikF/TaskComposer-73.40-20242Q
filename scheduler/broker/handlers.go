@@ -3,8 +3,10 @@ package broker
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"log"
 	"regexp"
+	"scheduler/jobs"
 	"scheduler/repository"
 	"strings"
 
@@ -24,6 +26,7 @@ type Handler struct {
 	executionRepository  *repository.ExecutionRepository
 	serviceRepository    *repository.ServiceRepository
 	executionStepsWriter *kafka.Writer
+	jobsRepository       *jobs.JobsRepository
 	servicesWriters      map[string]*kafka.Writer
 	tracer               trace.Tracer
 }
@@ -34,13 +37,31 @@ func NewHandler(
 	executionStepsWriter *kafka.Writer,
 	servicesWriters map[string]*kafka.Writer,
 	tracerProvider trace.TracerProvider,
+	jobsRepository *jobs.JobsRepository,
 ) *Handler {
 	return &Handler{
 		executionRepository,
 		serviceRepository,
 		executionStepsWriter,
+		jobsRepository,
 		servicesWriters,
 		tracerProvider.Tracer("kafka-handlers"),
+	}
+}
+
+func (h *Handler) EnqueueExecutionStep(stepToExecute repository.ExecutionStepDTO, ctx context.Context, span trace.Span) {
+	//Enqueue the step
+	bytes, err := json.Marshal(stepToExecute)
+	if err != nil {
+		log.Printf("Failed to marshal message: %s\n", err)
+		span.RecordError(err)
+		return
+	}
+	err = ProduceMessage(h.executionStepsWriter, h.PassHeader(ctx), bytes)
+	if err != nil {
+		log.Printf("Failed to produce message: %s\n", err)
+		span.RecordError(err)
+		return
 	}
 }
 
@@ -63,21 +84,33 @@ func (h *Handler) HandleExecutionSubmission(message []byte, header []kafka.Heade
 		span.RecordError(err)
 		return
 	}
-	h.executionRepository.CreateExecution(context.Background(), execution)
-	stepToExecute := execution.Steps[0].ToExecutionStepDTO()
-
-	//Enqueue the step
-	bytes, err := json.Marshal(stepToExecute)
-	if err != nil {
-		log.Printf("Failed to marshal message: %s\n", err)
-		span.RecordError(err)
-		return
-	}
-	err = ProduceMessage(h.executionStepsWriter, h.PassHeader(ctx), bytes)
-	if err != nil {
-		log.Printf("Failed to produce message: %s\n", err)
-		span.RecordError(err)
-		return
+	var useUUID *bool
+	useUUID = new(bool)
+	*useUUID = true
+	if execution.Params != nil {
+		if execution.Params.CronDefinition.Valid {
+			h.jobsRepository.CreateCronJob(execution.Params.CronDefinition.String, ctx, func() {
+				executionCopy := submission.ToExecution(repository.PENDING)
+				if !*useUUID {
+					executionCopy.ExecutionUUID = uuid.New().String()
+				} else {
+					*useUUID = false
+				}
+				h.executionRepository.CreateExecution(context.Background(), executionCopy)
+				stepToExecute := executionCopy.Steps[0].ToExecutionStepDTO()
+				h.EnqueueExecutionStep(stepToExecute, ctx, span)
+			}, execution.ExecutionUUID)
+		} else if execution.Params.DelayedSeconds > 0 {
+			h.jobsRepository.CreateDelayedJob(execution.Params.DelayedSeconds, ctx, func() {
+				h.executionRepository.CreateExecution(context.Background(), execution)
+				stepToExecute := execution.Steps[0].ToExecutionStepDTO()
+				h.EnqueueExecutionStep(stepToExecute, ctx, span)
+			}, execution.ExecutionUUID)
+		}
+	} else {
+		h.executionRepository.CreateExecution(context.Background(), execution)
+		stepToExecute := execution.Steps[0].ToExecutionStepDTO()
+		h.EnqueueExecutionStep(stepToExecute, ctx, span)
 	}
 }
 

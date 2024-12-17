@@ -81,11 +81,25 @@ releases:
       - kafka_port: "9092"
       - submission_kafka_topic: "execution_submissions"
       - steps_kafka_topic: "execution_steps"
-      - redis_host: "localhost"
       - submissions_topic: "execution_submissions"
       - steps_topic: "execution_steps"
       - services_file_path: "/data/services.json"
-
+      - etcd_host: "sch-sync-etcd-0"
+      - etcd_port: "2379"
+  - name: sch-sync
+    namespace: scheduler
+    chart: bitnami/etcd
+    version: 5.0.0
+    values:
+      - auth:
+          allowNoneAuthentication: true
+          rootPassword: ""
+          existingSecret: ""
+      - persistence:
+          size: "2Gi"
+          storageClass: "local-path"
+      - global:
+          defaultStorageClass: "local-path"
   # Workflow Manager
   - name: wf-db
     namespace: workflow-manager

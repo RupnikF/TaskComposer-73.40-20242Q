@@ -78,6 +78,11 @@ spec:
               value: "http://logging-signoz-otel-collector.default.svc.cluster.local:4318/v1/logs"
             - name: "SERVICES_FILE_PATH"
               value: {{ .Values.services_file_path }}
+            - name: "ETCD_HOST"
+              value: {{ .Values.etcd_host }}
+            - name: "ETCD_PORT"
+              value: {{ .Values.etcd_port | quote }}
+
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

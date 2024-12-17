@@ -152,3 +152,5 @@ kafka_port:
 submissions_topic: 
 steps_topic:
 services_file_path:
+etcd_host:
+etcd_port:

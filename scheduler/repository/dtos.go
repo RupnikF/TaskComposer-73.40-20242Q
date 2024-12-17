@@ -1,6 +1,10 @@
 package repository
 
-import "log"
+import (
+	"database/sql"
+	"log"
+	"strconv"
+)
 
 type SubmissionStepDTO struct {
 	Service string            `json:"service"`
@@ -28,19 +32,40 @@ func (s *SubmissionStepDTO) ToStep(stepIndex int) Step {
 	}
 }
 
+type ExecutionsParamsDTO struct {
+	CronDefinition string `json:"cronDefinition"`
+	Delayed        string `json:"delayed"`
+}
+
 type ExecutionSubmissionDTO struct {
 	WorkflowName  string              `json:"workflowName"`
 	WorkflowID    uint                `json:"workflowID"`
 	ExecutionUUID string              `json:"ExecutionUUID"`
 	Tags          []string            `json:"tags"`
-	Parameters    map[string]string   `json:"parameters"`
+	Parameters    ExecutionsParamsDTO `json:"parameters"`
 	Arguments     map[string]string   `json:"args"`
 	Steps         []SubmissionStepDTO `json:"steps"`
 }
 
 func (e ExecutionSubmissionDTO) ToExecution(status string) *Execution {
 
-	params := ExecutionParams{}
+	params := &ExecutionParams{}
+	paramsEmpty := true
+	if e.Parameters.CronDefinition != "" {
+		params.CronDefinition = sql.NullString{String: e.Parameters.CronDefinition, Valid: true}
+		paramsEmpty = false
+	}
+	if e.Parameters.Delayed != "" {
+		seconds, err := strconv.ParseUint(e.Parameters.Delayed, 10, 32)
+		if err != nil {
+			log.Printf("Failed to parse delayed seconds: %s\n", err)
+			params.DelayedSeconds = 0
+		} else {
+			params.DelayedSeconds = uint(seconds)
+			paramsEmpty = false
+		}
+
+	}
 
 	outputs := make([]*KeyValueOutput, 0)
 	arguments := make([]*KeyValueArgument, len(e.Arguments))
@@ -79,11 +104,13 @@ func (e ExecutionSubmissionDTO) ToExecution(status string) *Execution {
 			Tag: t,
 		}
 	}
-
+	if paramsEmpty {
+		params = nil
+	}
 	return &Execution{
 		WorkflowID:    e.WorkflowID,
 		Tags:          tags,
-		Params:        &params,
+		Params:        params,
 		Steps:         steps,
 		State:         &state,
 		ExecutionUUID: e.ExecutionUUID,

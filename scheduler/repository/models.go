@@ -2,8 +2,6 @@ package repository
 
 import (
 	"database/sql"
-	"time"
-
 	"gorm.io/gorm"
 )
 
@@ -35,7 +33,7 @@ type KeyValueStep struct {
 }
 type ExecutionParams struct {
 	gorm.Model
-	ScheduleTime   *time.Time
+	DelayedSeconds uint
 	CronDefinition sql.NullString
 	ExecutionID    uint
 }
