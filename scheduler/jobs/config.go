@@ -8,13 +8,18 @@ import (
 	"github.com/go-co-op/gocron/v2"
 	"os"
 	"time"
+	_ "time/tzdata"
 )
 
 func Initialize() *JobsRepository {
 	// Configuring elector with etdc cluster
 	endpoint := os.Getenv("ETCD_HOST") + ":" + os.Getenv("ETCD_PORT")
+	username := os.Getenv("ETCD_USERNAME")
+	password := os.Getenv("ETCD_PASSWORD")
 	cfg := elector.Config{
 		Endpoints:   []string{endpoint},
+		Username:    username,
+		Password:    password,
 		DialTimeout: 3 * time.Second,
 	}
 
@@ -33,7 +38,7 @@ func Initialize() *JobsRepository {
 		}
 	}()
 	// New scheduler with elector
-	TimeZone, err := time.LoadLocation("America/Buenos_Aires")
+	TimeZone, err := time.LoadLocation("America/Argentina/Buenos_Aires")
 	if err != nil {
 		panic(err)
 	}
