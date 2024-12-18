@@ -82,6 +82,10 @@ spec:
               value: {{ .Values.etcd_host }}
             - name: "ETCD_PORT"
               value: {{ .Values.etcd_port | quote }}
+            - name: "ETCD_USERNAME"
+              value: {{ .Values.etcd_user | quote }}
+            - name: "ETCD_PASSWORD"
+              value: {{ .Values.etcd_pass | quote }}
 
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}

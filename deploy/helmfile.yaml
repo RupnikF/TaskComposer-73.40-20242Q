@@ -84,17 +84,20 @@ releases:
       - submissions_topic: "execution_submissions"
       - steps_topic: "execution_steps"
       - services_file_path: "/data/services.json"
-      - etcd_host: "sch-sync-etcd-0"
+      - etcd_host: "sch-sync-etcd"
       - etcd_port: "2379"
+      - etcd_user: {{ requiredEnv "ETCD_USER" }}
+      - etcd_pass: {{ requiredEnv "ETCD_PASSWORD" }}
   - name: sch-sync
     namespace: scheduler
     chart: bitnami/etcd
-    version: 5.0.0
+    version: 10.7.1
     values:
       - auth:
-          allowNoneAuthentication: true
-          rootPassword: ""
-          existingSecret: ""
+          rbac:
+            create: true
+            allowNoneAuthentication: true
+            rootPassword: {{ requiredEnv "ETCD_PASSWORD" }}
       - persistence:
           size: "2Gi"
           storageClass: "local-path"

@@ -154,3 +154,5 @@ steps_topic:
 services_file_path:
 etcd_host:
 etcd_port:
+etcd_user:
+etcd_pass:
