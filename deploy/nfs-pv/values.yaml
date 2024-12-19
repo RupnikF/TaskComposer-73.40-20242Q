@@ -1,5 +1,4 @@
-name: "shared-nfs-pv"
-appLabel: "nfs-storage"
+names: []
 storage: "2Gi"
 accessMode: "ReadWriteMany"
 nfsServer: "nfs-server.example.com"

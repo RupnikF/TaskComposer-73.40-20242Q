@@ -149,13 +149,37 @@ releases:
           name: "echo-service-pv"
           accessMode: "ReadWriteMany"
           size: "2Gi"
-          label: "nfs-storage"
+          label: "echo-pv"
       - volumes:
           - name: "echo-service-pv"
             persistentVolumeClaim:
               claimName: "echo-service-pv"
       - volumeMounts:
           - name: "echo-service-pv"
+            mountPath: "/data"
+            readOnly: false
+  # s3-service
+  - name: s3-service
+    namespace: s3-service
+    chart: ./s3-service
+    values:
+      - image:
+          tag: "dev"
+      - kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
+      - kafka_port: "9092"
+      - input_topic: "s3_service_input"
+      - output_topic: "s3_service_output"
+      - pvc:
+          name: "s3-service-pv"
+          accessMode: "ReadWriteMany"
+          size: "2Gi"
+          label: "s3-pv"
+      - volumes:
+          - name: "s3-service-pv"
+            persistentVolumeClaim:
+              claimName: "s3-service-pv"
+      - volumeMounts:
+          - name: "s3-service-pv"
             mountPath: "/data"
             readOnly: false
   - name: traefik
@@ -177,8 +201,7 @@ releases:
     namespace: default
     chart: ./nfs-pv
     values:
-      - name: "shared-nfs-pv"
-      - appLabel: "nfs-storage"
+      - names: ["echo-pv", "s3-pv"]
       - storage: "6Gi"
       - accessMode: "ReadWriteMany"
       - nfsServer: {{ requiredEnv "NFS_SERVER" }}

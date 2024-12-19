@@ -13,6 +13,9 @@ public class ServiceRepositoryImpl implements ServiceRepository{
         if (name.equals("native")) {
             return Optional.of(new Service("native", Set.of("if", "abort")));
         }
+        else if (name.equals("s3_service")) {
+            return Optional.of(new Service("s3_service", Set.of("upload", "download")));
+        }
         return Optional.of(new Service("echo", Set.of("echo")));
     }
 }

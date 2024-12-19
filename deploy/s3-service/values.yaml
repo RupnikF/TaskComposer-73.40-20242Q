@@ -9,7 +9,7 @@ replicaCount: 1
 image:
   repository: frupnik/s3-service
   # This sets the pull policy for images.
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "dev"
 
@@ -121,3 +121,16 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+pvc:
+  - name: "service-a-pvc"
+  - size: "1Gi"
+  - appLabel: "nfs-storage"
+  - accessMode: "ReadWriteMany"
+
+kafka_host:
+kafka_port:
+input_topic:
+output_topic:
+service_name: "s3_service"
+files_base_path: "/data"

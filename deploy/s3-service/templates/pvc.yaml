@@ -13,4 +13,4 @@ spec:
   storageClassName: nfs
   selector:
     matchLabels:
-      app: {{ .Values.pvc.label}}
+      app: {{ .Values.pvc.label }}

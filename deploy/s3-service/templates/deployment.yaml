@@ -40,6 +40,19 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
+          env:
+            - name: "KAFKA_HOST"
+              value: {{ .Values.kafka_host }}
+            - name: "KAFKA_PORT"
+              value: {{ .Values.kafka_port | quote }}
+            - name: "INPUT_TOPIC"
+              value: {{ .Values.input_topic }}
+            - name: "OUTPUT_TOPIC"
+              value: {{ .Values.output_topic }}
+            - name: "SERVICE_NAME"
+              value: {{ .Values.service_name }}
+            - name: "FILES_BASE_PATH"
+              value: {{ .Values.files_base_path }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
