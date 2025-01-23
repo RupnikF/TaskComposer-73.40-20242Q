@@ -77,7 +77,7 @@ Content-Type: application/json
 GET http://localhost:8080/healthcheck
 
 ###
-GET {{baseScheduler}}/executions/da0f328e-3915-49b2-a416-0865427a649c
+GET {{baseScheduler}}/executions/d662bcf5-327d-446e-8780-5bbf72c77e1d
 
 ###
 POST {{baseScheduler}}/cancel-execution/da0f328e-3915-49b2-a416-0865427a649c

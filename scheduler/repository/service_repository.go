@@ -36,6 +36,7 @@ func NewServiceRepository() *ServiceRepository {
 
 func (sr *ServiceRepository) GetService(name string) (Service, error) {
 	service, ok := sr.Services[name]
+	fmt.Println("EXISTING SERVICES", sr.Services)
 	if !ok {
 		return Service{}, fmt.Errorf("service not found: %s", name)
 	}

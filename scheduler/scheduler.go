@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/otel/propagation"
 	"log"
 	"os"
 	"scheduler/broker"
@@ -89,7 +90,7 @@ func initLogger() (context.Context, *setupLog.LoggerProvider) {
 }
 
 func main() {
-
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 	ctx, lp := initLogger()
 	defer lp.Shutdown(ctx)
 

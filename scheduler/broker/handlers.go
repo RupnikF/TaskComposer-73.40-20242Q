@@ -141,7 +141,7 @@ func (h *Handler) PassHeader(ctx context.Context) []kafka.Header {
 	propagator := otel.GetTextMapPropagator()
 	carrier := make(propagation.MapCarrier)
 	propagator.Inject(ctx, carrier)
-	var headers []kafka.Header = make([]kafka.Header, 0)
+	var headers = make([]kafka.Header, 0)
 	for k, v := range carrier {
 		headers = append(headers, kafka.Header{
 			Key: k, Value: []byte(v),
@@ -298,7 +298,7 @@ type ServiceResponse struct {
 }
 
 func (h *Handler) HandleServiceResponse(message []byte, header []kafka.Header) {
-	ctx, span := h.CreateOrGetSpan("HandleExecutionSubmission", header)
+	ctx, span := h.CreateOrGetSpan("HandleServiceResponse", header)
 	defer span.End()
 	fmt.Println("Received message from service", string(message))
 	response := ServiceResponse{}

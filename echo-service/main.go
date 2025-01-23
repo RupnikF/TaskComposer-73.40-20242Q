@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"io"
 	"log"
 	"net/http"
@@ -42,6 +44,33 @@ var (
 	serviceName      = os.Getenv("SERVICE_NAME")
 	grpcCollectorURL = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT_GRPC")
 )
+
+func CreateOrGetSpan(spanName string, header []kafka.Header) (context.Context, trace.Span) {
+	headerMap := make(map[string]string)
+	for _, h := range header {
+		headerMap[h.Key] = string(h.Value)
+	}
+
+	propagator := otel.GetTextMapPropagator()
+	carrier := propagation.MapCarrier(headerMap)
+	ctx := propagator.Extract(context.Background(), carrier)
+	tracer := otel.Tracer("kafka-handlers")
+
+	return tracer.Start(ctx, spanName, trace.WithAttributes())
+}
+
+func PassHeader(ctx context.Context) []kafka.Header {
+	propagator := otel.GetTextMapPropagator()
+	carrier := make(propagation.MapCarrier)
+	propagator.Inject(ctx, carrier)
+	var headers = make([]kafka.Header, 0)
+	for k, v := range carrier {
+		headers = append(headers, kafka.Header{
+			Key: k, Value: []byte(v),
+		})
+	}
+	return headers
+}
 
 func initTracer() func(context.Context) error {
 	secureOption := otlptracegrpc.WithInsecure()
@@ -101,6 +130,7 @@ func initLogger() (context.Context, *setupLog.LoggerProvider) {
 }
 
 func main() {
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 	ctx, lp := initLogger()
 	defer func() {
 		lp.Shutdown(ctx)
@@ -148,12 +178,14 @@ func main() {
 					logger.Error("Error unmarshaling message:", err)
 					continue
 				}
-
+				ctx, span := CreateOrGetSpan("echo-service", msg.Headers)
 				if request.TaskName == "echo" {
+					span.SetAttributes(attribute.String("task.name", request.TaskName))
 					logger.Debug("Received message: %s", string(msg.Value))
 					requestMessage, ok := request.Inputs["msg"]
 					var echoResponse EchoResponse
 					if !ok {
+						span.RecordError(fmt.Errorf("property msg not found in echo request"))
 						echoResponse = EchoResponse{
 							ExecutionId: request.ExecutionId,
 							Outputs: map[string]interface{}{
@@ -163,6 +195,7 @@ func main() {
 							},
 						}
 					} else {
+						span.SetAttributes(attribute.String("task.response", (requestMessage.(string))))
 						echoResponse = EchoResponse{
 							ExecutionId: request.ExecutionId,
 							Outputs: map[string]interface{}{
@@ -174,14 +207,16 @@ func main() {
 					finalMsg, err := json.Marshal(echoResponse)
 					if err != nil {
 						logger.Error("Error marshaling final response: %v", err)
+						span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
 						continue
 					}
 					logger.Info("Sending response: %s", string(finalMsg))
-					err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg})
+					err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg, Headers: PassHeader(ctx)})
 					if err != nil {
 						logger.Error("Error writing final response: %v", err)
 					}
 				} else {
+					span.RecordError(fmt.Errorf("unknown task name: %s", request.TaskName))
 					finalMsg, err := json.Marshal(EchoResponse{
 						ExecutionId: request.ExecutionId,
 						Outputs: map[string]interface{}{
@@ -191,12 +226,14 @@ func main() {
 						},
 					})
 					if err != nil {
+						span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
 						logger.Error("Error marshaling final response: %v", err)
 						continue
 					}
-					err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg})
+					err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg, Headers: PassHeader(ctx)})
 					if err != nil {
 						logger.Error("Error writing final response: %v", err)
+						span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
 					}
 				}
 			}
