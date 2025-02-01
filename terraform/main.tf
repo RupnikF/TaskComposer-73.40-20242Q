@@ -18,10 +18,10 @@ data "aws_iam_role" "lab_role" {
   name = "LabRole"
 }
 
-resource "aws_iam_instance_profile" "lab_instance_profile" {
-  name = "lab-instance-profile"
-  role = data.aws_iam_role.lab_role.name
-}
+# resource "aws_iam_instance_profile" "lab_instance_profile" {
+#   name = "lab-instance-profile"
+#   role = data.aws_iam_role.lab_role.name
+# }
 
 resource "aws_key_pair" "node-key" {
   key_name   = "cluster-keypair"
@@ -41,7 +41,7 @@ resource "aws_instance" "master" {
     POD_NETWORK_CIDR   = "192.168.0.0/16"
   })}")
 
-  iam_instance_profile = aws_iam_instance_profile.lab_instance_profile.name
+#   iam_instance_profile = aws_iam_instance_profile.lab_instance_profile.name
 
   root_block_device {
     volume_size = 30

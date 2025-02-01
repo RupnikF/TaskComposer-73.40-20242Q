@@ -50,7 +50,10 @@ Content-Type: application/json
 {
   "workflowName": "IFTEST",
   "tags": ["hola","chau"],
-  "parameters": {},
+  "parameters": {
+    "cronDefinition": "* * * * * *",
+    "delayed": "30"
+  },
   "args": {
     "property1": "asd",
     "property2": "chau"

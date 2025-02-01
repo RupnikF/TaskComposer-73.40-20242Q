@@ -40,6 +40,22 @@ public class TriggerController {
         if (workflowOptional.isEmpty()) {
             return ResponseEntity.badRequest().body("Workflow not found");
         }
+        if(!body.getParameters().isEmpty()){
+            //Validate Parameters
+            var params = body.getParameters();
+            if(params.get("cronDefinition") != null){
+                //Check if the cron definition is valid, Ignore Intellisense redundancy
+                if(!params.get("cronDefinition").matches("^(\\*|((\\*\\/)?[1-5]?[0-9])) (\\*|((\\*\\/)?[1-5]?[0-9])) (\\*|((\\*\\/)?(1?[0-9]|2[0-3]))) (\\*|((\\*\\/)?([1-9]|[12][0-9]|3[0-1]))) (\\*|((\\*\\/)?([1-9]|1[0-2]))) (\\*|((\\*\\/)?[0-6]))$")){
+                    return ResponseEntity.badRequest().body("Invalid cron definition");
+                }
+            }
+            if(params.get("delayed") != null){
+                //Check if it's an integer larger than 0
+                if (!params.get("delayed").matches("^\\d+$")){
+                    return ResponseEntity.badRequest().body("Invalid delayed value");
+                }
+            }
+        }
         Span span = tracer.spanBuilder("Start execution")
                 .setAttribute("execution-workflow", body.getWorkflowName())
                 .startSpan();

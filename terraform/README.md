@@ -28,3 +28,4 @@ contexts:
 ```
 4- Testear con `kubectl get nodes`
 5- Agregar el ip o dns name del nodo nfs al .env `"NFS_SERVER"`
+6- REINICIAR A MANO DESDE LA CONSOLA DE AWS TODOS LOS NODOS ANTES DE PASAR AL DEPLOY DE HELM
