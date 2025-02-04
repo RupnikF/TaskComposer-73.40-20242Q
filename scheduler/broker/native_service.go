@@ -19,6 +19,7 @@ type nativeFn func(
 	ctx context.Context,
 )
 
+// TODO: Unit Test? | Integration Test?
 func (h *Handler) ConditionalHandler(
 	step repository.ExecutionStepDTO,
 	state *repository.State,
