@@ -119,7 +119,6 @@ type ServiceMessage struct {
 	ExecutionId uint                   `json:"executionId"`
 	TaskName    string                 `json:"taskName"`
 	Inputs      map[string]interface{} `json:"inputs"`
-	TraceId     string                 `json:"traceId"`
 }
 
 // Matches with all strings that start with args.
@@ -361,7 +360,7 @@ func (h *Handler) HandleServiceResponse(message []byte, header []kafka.Header) {
 		state.Step = execution.Steps[nextStepIndex].Name
 		state.Status = repository.PENDING
 		stepToExecute := execution.Steps[nextStepIndex].ToExecutionStepDTO()
-        h.executionRepository.UpdateState(context.Background(), state)
+		h.executionRepository.UpdateState(context.Background(), state)
 
 		//Enqueue the step
 		bytes, err := json.Marshal(stepToExecute)
