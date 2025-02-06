@@ -43,7 +43,9 @@ func (t *TaskRequest) ToError(msg string) Response {
 	return Response{
 		ExecutionId: t.ExecutionId,
 		Outputs: map[string]interface{}{
-			"msg": msg,
+			"error": map[string]interface{}{
+				"msg": msg,
+			},
 		},
 	}
 }
