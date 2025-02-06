@@ -36,12 +36,6 @@ steps:
         msg: "check-property.result"
 
 ###
-GET {{baseWorkflowManager}}/workflows
-
-###
-DELETE {{baseWorkflowManager}}/workflows/5
-
-###
 POST {{baseWorkflowManager}}/triggers
 Content-Type: application/json
 
@@ -58,44 +52,3 @@ Content-Type: application/json
   }
 }
 
-###
-POST {{baseWorkflowManager}}/triggers
-Content-Type: application/json
-
-{
-  "workflowName": "IFTEST",
-  "tags": [],
-  "parameters": {},
-  "args": {
-    "property1": "hola",
-    "property2": "chau"
-  }
-}
-
-###
-POST {{baseWorkflowManager}}/triggers
-Content-Type: application/json
-
-{
-  "workflowName": "Ubuntu list commands",
-  "tags": [],
-  "parameters": {}
-}
-
-###
-
-GET http://localhost:8080/healthcheck
-
-###
-GET {{baseScheduler}}/executions/c3a47e55-6f66-4422-b9b8-f014d31118e4
-
-###
-POST {{baseScheduler}}/cancel-execution/da0f328e-3915-49b2-a416-0865427a649c
-
-###
-POST {{baseScheduler}}/cancel-execution/
-Content-Type: application/json
-
-{
-  "tags": ["hola","chau"]
-}

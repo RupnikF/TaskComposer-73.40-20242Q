@@ -15,6 +15,8 @@ public class ServiceRepositoryImpl implements ServiceRepository{
         }
         else if (name.equals("s3_service")) {
             return Optional.of(new Service("s3_service", Set.of("upload", "download")));
+        } else if (name.equals("ubuntu_service")) {
+            return Optional.of(new Service("ubuntu_service", Set.of("bash", "eval")));
         }
         return Optional.of(new Service("echo", Set.of("echo")));
     }

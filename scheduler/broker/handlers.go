@@ -361,6 +361,7 @@ func (h *Handler) HandleServiceResponse(message []byte, header []kafka.Header) {
 		state.Step = execution.Steps[nextStepIndex].Name
 		state.Status = repository.PENDING
 		stepToExecute := execution.Steps[nextStepIndex].ToExecutionStepDTO()
+        h.executionRepository.UpdateState(context.Background(), state)
 
 		//Enqueue the step
 		bytes, err := json.Marshal(stepToExecute)

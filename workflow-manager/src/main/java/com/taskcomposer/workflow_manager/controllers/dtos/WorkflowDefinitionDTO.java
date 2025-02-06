@@ -53,19 +53,21 @@ public class WorkflowDefinitionDTO {
         var builder = Workflow.builder();
         builder.workflowName(name);
         Workflow workflow = builder.build();
-        List<Argument> arguments = args.stream().map((argumentMap) -> {
-            var argumentBuilder = Argument.builder();
-            var defaultMap = argumentMap.entrySet().stream().findFirst().orElseThrow(() -> new IllegalArgumentException("No default argument"));
-            argumentBuilder.argKey(defaultMap.getKey());
-            if (!defaultMap.getValue().containsKey("default")) {
-                throw new IllegalArgumentException("No default argument");
-            }
-            argumentBuilder.defaultValue(defaultMap.getValue().get("default"));
-            argumentBuilder.workflow(workflow);
-            return argumentBuilder.build();
-        }).toList();
+        if (args != null) {
+            List<Argument> arguments = args.stream().map((argumentMap) -> {
+                var argumentBuilder = Argument.builder();
+                var defaultMap = argumentMap.entrySet().stream().findFirst().orElseThrow(() -> new IllegalArgumentException("No default argument"));
+                argumentBuilder.argKey(defaultMap.getKey());
+                if (!defaultMap.getValue().containsKey("default")) {
+                    throw new IllegalArgumentException("No default argument");
+                }
+                argumentBuilder.defaultValue(defaultMap.getValue().get("default"));
+                argumentBuilder.workflow(workflow);
+                return argumentBuilder.build();
+            }).toList();
 
-        workflow.setArgs(arguments);
+            workflow.setArgs(arguments);
+        }
         workflow.setSteps(toSteps(workflow));
         return workflow;
     }
