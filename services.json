@@ -17,6 +17,12 @@
       "name": "native",
       "inputTopic": "",
       "outputTopic": ""
+    },
+    "ubuntu_service": {
+      "server": "broker:9092",
+      "name": "ubuntu_service",
+      "inputTopic": "ubuntu_service_input",
+      "outputTopic": "ubuntu_service_output"
     }
   }
 }
