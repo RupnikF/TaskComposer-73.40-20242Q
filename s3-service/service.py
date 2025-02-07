@@ -1,9 +1,27 @@
 import json
 import boto3
-import os
+import os, sys, threading
 from confluent_kafka import Consumer, KafkaError
+from flask import Flask, jsonify
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("s3-service")
+
+os.environ["PYTHONUNBUFFERED"] = "1"
+
+handler = logging.FileHandler("/var/log/s3-service.log", mode="a")
+handler2 = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.INFO)
+handler2.setLevel(logging.INFO)
+
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+handler2.setFormatter(formatter)
+
+logger.setLevel(logging.INFO)  # Ensure logger level is set
+logger.addHandler(handler)
+logger.addHandler(handler2)
+
+app = Flask(__name__)
 
 """
 {
@@ -127,5 +145,12 @@ def consume_kafka_messages():
     finally:
         consumer.close()
 
+@app.route('/healthz')
+def healthz():
+    return jsonify({"status": "ok"}), 200
+
 if __name__ == "__main__":
-    consume_kafka_messages()
+    logger.info(f"HELLO")
+    kafka_thread = threading.Thread(target=consume_kafka_messages, daemon=True)
+    kafka_thread.start()
+    app.run(host='0.0.0.0', port=80)

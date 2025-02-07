@@ -35,7 +35,36 @@ steps:
       input:
         msg: "check-property.result"
 
+###
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
 
+name: "S3_TEST_D"
+args:
+  - file_path:
+      default: ""
+  - bucket:
+      default: ""
+  - s3_key:
+      default: ""
+  - aws_access_key:
+      default: ""
+  - aws_secret_key:
+      default: ""
+  - aws_session_token:
+      default: ""
+steps:
+  - s3_download:
+      service: "s3_service"
+      task: "download"
+      input:
+        file_path: "$args.file_path"
+        bucket_name: "$args.bucket"
+        s3_key: "$args.s3_key"
+        aws_access_key: "$args.aws_access_key"
+        aws_secret_key: "$args.aws_secret_key"
+        aws_region: "us-east-1"
+        aws_session_token: "$args.aws_session_token"
 
 ###
 GET {{baseWorkflowManager}}/workflows
@@ -71,6 +100,23 @@ Content-Type: application/json
   "args": {
     "property1": "hola",
     "property2": "chau"
+  }
+}
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+  "workflowName": "S3_TEST_D",
+  "tags": [],
+  "parameters": {},
+  "args": {
+    "file_path": "prueba.mp4",
+    "bucket": "lechugabucket/sds_tp2_s6_a.mp4",
+    "aws_access_key": "ASIA5TJKSGZNCYXESFCC",
+    "aws_secret_key": "Ig3ltdmgrsSl1kEcpKXUbYTkd+JcqYGUbm4WxQgb",
+    "aws_session_token": "IQoJb3JpZ2luX2VjEEIaCXVzLXdlc3QtMiJHMEUCIDZyUHLPZIOT8Jox4KJ6D44yg+TDXLW95+qS0vrwvsl0AiEAs0MCh6iYO24Gz8mbRMcTPg0f05mSkGCqpa4yuPHpAVAqrQIIWxABGgw5MzQ3ODE1MzE3MzgiDOi4bG+/ctqfLpxLNCqKAja0z4VWs7myuBW0XVJ1Ykxm04Hq4ToDCEvA3qHp0AxOJvL6vPRB+I8gicHz9IM9Mhav3d24ZsT5avU/ZhZPUjOhpMYSjM5VOTwGCf7hZCdZ0O5j/vf4oWkGUZESXUFZd50Y18tIH9w1Wanfn20mXs74DRdZ2PNEkpTrbEFXrBfRqRxlu36MdoXX+sy5FlmFGyesCIZo24coK9G4PHnPYs6atRjbkNeqA2wTv9myktZZed5i2rW3MPo4Dlx7KryQ4CS01sf72tkd7IoWhcJDRMrbTeYu2ydw5uhtXBS7hU1+sgaiWQ0bIJvOeZns0/vjTw+xdmYtOFftkvN5lKgiI5DZmPOW27k0vIt8MJ6Wkr0GOp0BN/AoJ7pjGmkplzdRSOhtBDFEwcY7Rfa0D3+IhIdUp4ckU2HacBfX7/tuUh61w+9YHjhCnGYgzB5k4fBLCzVFju4CCFFXTUuovELdatjIV/wkgNekTGz0WYg8GxOcD4aBkj8BMU6xhqdKaI1npQU/kd0D2O9lSI3CtqRjbIaeAs6I98Y6ApxmYWsSOikdErLgQTJStAMyUtiW+sSYBg=="
   }
 }
 
