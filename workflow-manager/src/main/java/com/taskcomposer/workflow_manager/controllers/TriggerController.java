@@ -61,8 +61,13 @@ public class TriggerController {
                 .startSpan();
         log.info("Starting execution {}", body.getWorkflowName());
         Workflow workflow = workflowOptional.get();
-        String executionUUID = triggerService.triggerWorkflow(workflow, body.getTags(), body.getParameters(), body.getArgs());
-        span.end();
-        return ResponseEntity.ok(executionUUID);
+        try {
+            String executionUUID = triggerService.triggerWorkflow(workflow, body.getTags(), body.getParameters(), body.getArgs());
+            return ResponseEntity.ok(executionUUID);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Missing required arguments. I do not tell you bc I'm lazy.");
+        } finally {
+            span.end();
+        }
     }
 }

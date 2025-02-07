@@ -53,9 +53,14 @@ public class TriggerServant extends WorkflowTriggerServiceGrpc.WorkflowTriggerSe
         request.getParametersList().forEach((keyValue -> parametersMap.put(keyValue.getKey(), keyValue.getValue())));
         Map<String, String> argsMap = new HashMap<>();
         request.getArgsList().forEach((keyValue -> argsMap.put(keyValue.getKey(), keyValue.getValue())));
-        String executionUUID = triggerService.triggerWorkflow(workflow, tagsList, parametersMap, argsMap);
-        span.end();
-        responseObserver.onNext(TriggerResponse.newBuilder().setUuid(executionUUID).build());
-        responseObserver.onCompleted();
+        try {
+            String executionUUID = triggerService.triggerWorkflow(workflow, tagsList, parametersMap, argsMap);
+            responseObserver.onNext(TriggerResponse.newBuilder().setUuid(executionUUID).build());
+        } catch (IllegalArgumentException e) {
+            responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asException());
+        } finally {
+            span.end();
+            responseObserver.onCompleted();
+        }
     }
 }

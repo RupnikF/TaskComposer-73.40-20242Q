@@ -44,7 +44,21 @@ public class TriggerService {
         this.openTelemetry = openTelemetry;
     }
 //
-    public String triggerWorkflow(Workflow workflow, List<String> tags, Map<String, String> parameters, Map<String, String> args) {
+
+    private boolean validateWorkflow(Workflow workflow, Map<String, String> args) {
+        boolean valid = true;
+        for (var arg : workflow.getArgs()) {
+            if (arg.getDefaultValue() == null) {
+                valid = valid && args.containsKey(arg.getArgKey());
+            }
+        }
+        return valid;
+    }
+
+    public String triggerWorkflow(Workflow workflow, List<String> tags, Map<String, String> parameters, Map<String, String> args) throws IllegalArgumentException {
+        if (!validateWorkflow(workflow, args)) {
+            throw new IllegalArgumentException("Invalid workflow");
+        }
         ExecutionSubmissionDTO submissionDTO = new ExecutionSubmissionDTO(workflow, tags, parameters, args);
         Span span = this.tracer.spanBuilder("Trigger Service").startSpan();
         span.setAttribute("execution-topic", kafkaTopic);
