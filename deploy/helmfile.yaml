@@ -182,6 +182,30 @@ releases:
           - name: "s3-service-pv"
             mountPath: "/data"
             readOnly: false
+  # ubuntu-service
+  - name: ubuntu-service
+    namespace: ubuntu-service
+    chart: ./ubuntu-service
+    values:
+      - image:
+          tag: "dev"
+      - kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
+      - kafka_port: "9092"
+      - input_topic: "echo_service_input"
+      - output_topic: "echo_service_output"
+      - pvc:
+          name: "ubuntu-service-pv"
+          accessMode: "ReadWriteMany"
+          size: "2Gi"
+          label: "ubuntu-pv"
+      - volumes:
+          - name: "ubuntu-service-pv"
+            persistentVolumeClaim:
+              claimName: "ubuntu-service-pv"
+      - volumeMounts:
+          - name: "ubuntu-service-pv"
+            mountPath: "/data"
+            readOnly: false
   - name: traefik
     namespace: default
     chart: traefik/traefik
@@ -204,10 +228,12 @@ releases:
       - names:
           - "echo-pv"
           - "s3-pv"
+          - "ubuntu-pv"
       - storage: "2Gi"
       - accessMode: "ReadWriteMany"
       - nfsServer: {{ requiredEnv "NFS_SERVER" }}
       - nfsPath: "/mnt/nfs"
+      
   - name: logging
     namespace: default
     chart: signoz/signoz
