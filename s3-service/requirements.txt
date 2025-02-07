@@ -1,3 +1,7 @@
 boto3
 confluent-kafka
 flask
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-exporter-otlp
+types-confluent-kafka
