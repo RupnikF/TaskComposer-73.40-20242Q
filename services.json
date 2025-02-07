@@ -4,19 +4,29 @@
       "server": "scheduler-broker-kafka:9092",
       "name": "echo_service",
       "inputTopic": "echo_service_input",
-      "outputTopic": "echo_service_output"
+      "outputTopic": "echo_service_output",
+      "tasks": ["echo"]
     },
     "s3_service": {
       "server": "scheduler-broker-kafka:9092",
       "name": "s3_service",
       "inputTopic": "s3_service_input",
-      "outputTopic": "s3_service_output"
+      "outputTopic": "s3_service_output",
+      "tasks": ["download", "upload"]
     },
     "native": {
       "server": "",
       "name": "native",
       "inputTopic": "",
-      "outputTopic": ""
+      "outputTopic": "",
+      "tasks": ["if", "abort"]
+    },
+    "ubuntu_service": {
+      "server": "broker:9092",
+      "name": "ubuntu_service",
+      "inputTopic": "ubuntu_service_input",
+      "outputTopic": "ubuntu_service_output",
+      "tasks": ["bash", "eval"]
     }
   }
 }

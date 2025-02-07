@@ -1,0 +1,54 @@
+@baseScheduler=http://localhost:8080
+@baseWorkflowManager=http://localhost:8081
+
+###
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
+
+name: "IFTEST"
+args:
+  - property1:
+      default: "value"
+  - property2:
+      default: "value"
+steps:
+  - echo1:
+      service: "echo_service" # (default)
+      task: "echo"
+      input:
+        msg: "$args.property1"
+  - check-property:
+      service: 'native'
+      task: "if"
+      input:
+        leftValue: "echo1.msg"
+        rightValue: "$args.property2"
+        operator: "=="
+        onTrue: "echo2"
+        onFalse: "continue"
+  - premature:
+      service: "native"
+      task: "abort"
+  - echo2:
+      service: "echo_service"
+      task: "echo"
+      input:
+        msg: "check-property.result"
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+  "workflowName": "IFTEST",
+  "tags": ["hola","chau"],
+  "parameters": {
+    "cronDefinition": "* * * * * *",
+    "delayed": "30"
+  },
+  "args": {
+    "property1": "asd",
+    "property2": "chau"
+  }
+}
+
