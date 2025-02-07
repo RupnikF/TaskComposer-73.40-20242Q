@@ -61,7 +61,7 @@ func Initialize(serviceTopics []string) {
 
 	conn, err := kafka.Dial("tcp", bootstrapServers)
 	if err != nil {
-		configLogger.Error("Error connecting to Kafka Servers", err.Error())
+		configLogger.Error("Error connecting to Kafka Servers", "error", err)
 		panic(err.Error())
 	}
 	defer func() {
@@ -72,13 +72,13 @@ func Initialize(serviceTopics []string) {
 
 	controller, err := conn.Controller()
 	if err != nil {
-		configLogger.Error("Error creating kafka controller", err.Error())
+		configLogger.Error("Error creating kafka controller", "error", err)
 		panic(err.Error())
 	}
 	var controllerConn *kafka.Conn
 	controllerConn, err = kafka.Dial("tcp", net.JoinHostPort(controller.Host, strconv.Itoa(controller.Port)))
 	if err != nil {
-		configLogger.Error("Error dialing kafka host port", err.Error())
+		configLogger.Error("Error dialing kafka host port", "error", err)
 		panic(err.Error())
 	}
 	defer func(controllerConn *kafka.Conn) {
@@ -110,6 +110,6 @@ func Initialize(serviceTopics []string) {
 
 	err = controllerConn.CreateTopics(topicConfigs...)
 	if err != nil {
-		configLogger.Error("Error creating topics", err.Error())
+		configLogger.Error("Error creating topics", "error", err)
 	}
 }

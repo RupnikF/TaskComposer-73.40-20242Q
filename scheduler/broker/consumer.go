@@ -53,11 +53,11 @@ func ConsumeMessageWithHandler(c *kafka.Reader, timeout time.Duration, handler f
 			// The client will automatically try to recover from all errors.
 			// Timeout is not considered an error because it is raised by
 			// ReadMessage in absence of messages.
-			consumerLogger.Warn("Consumer error: %v (%v)\n", err, msg)
+			consumerLogger.Warn("Consumer error", "error", err, "message", msg)
 		}
 	}
 	err := c.Close()
 	if err != nil {
-		consumerLogger.Error("Failed to close consumer: %s\n", err)
+		consumerLogger.Error("Failed to close consumer", "error", err)
 	}
 }

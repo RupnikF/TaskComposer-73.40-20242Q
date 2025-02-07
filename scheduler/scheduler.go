@@ -202,7 +202,7 @@ func main() {
 		serviceWriters[service.Name] = broker.GetWriter([]string{service.Server}, service.InputTopic)
 	}
 	tp := otel.GetTracerProvider()
-	handler := broker.NewHandler(executionRepository, serviceRepository, executionStepsWriter, serviceWriters, tp, jobsRepository)
+	handler := broker.NewHandler(executionRepository, serviceRepository, executionStepsWriter, serviceWriters, tp, jobsRepository, broker.ProduceMessage)
 
 	executionReader := broker.GetExecutionReader()
 

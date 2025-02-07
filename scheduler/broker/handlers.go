@@ -23,12 +23,13 @@ import (
 var handlerLogger = otelslog.NewLogger("handlers")
 
 type Handler struct {
-	executionRepository  *repository.ExecutionRepository
-	serviceRepository    *repository.ServiceRepository
-	executionStepsWriter *kafka.Writer
-	jobsRepository       *jobs.JobsRepository
-	servicesWriters      map[string]*kafka.Writer
-	tracer               trace.Tracer
+	executionRepository    *repository.ExecutionRepository
+	serviceRepository      *repository.ServiceRepository
+	executionStepsWriter   *kafka.Writer
+	jobsRepository         *jobs.JobsRepository
+	servicesWriters        map[string]*kafka.Writer
+	produceMessageFunction func(writer *kafka.Writer, headers []kafka.Header, message []byte) error
+	tracer                 trace.Tracer
 }
 
 func NewHandler(
@@ -38,6 +39,7 @@ func NewHandler(
 	servicesWriters map[string]*kafka.Writer,
 	tracerProvider trace.TracerProvider,
 	jobsRepository *jobs.JobsRepository,
+	produceMessageFunction func(writer *kafka.Writer, headers []kafka.Header, message []byte) error,
 ) *Handler {
 	return &Handler{
 		executionRepository,
@@ -45,11 +47,11 @@ func NewHandler(
 		executionStepsWriter,
 		jobsRepository,
 		servicesWriters,
+		produceMessageFunction,
 		tracerProvider.Tracer("kafka-handlers"),
 	}
 }
 
-// TODO: Integration Test
 func (h *Handler) EnqueueExecutionStep(stepToExecute repository.ExecutionStepDTO, ctx context.Context, span trace.Span) {
 	//Enqueue the step
 	bytes, err := json.Marshal(stepToExecute)
@@ -58,7 +60,7 @@ func (h *Handler) EnqueueExecutionStep(stepToExecute repository.ExecutionStepDTO
 		span.RecordError(err)
 		return
 	}
-	err = ProduceMessage(h.executionStepsWriter, h.PassHeader(ctx), bytes)
+	err = h.produceMessageFunction(h.executionStepsWriter, h.PassHeader(ctx), bytes)
 	if err != nil {
 		log.Printf("Failed to produce message: %s\n", err)
 		span.RecordError(err)
@@ -70,11 +72,11 @@ func (h *Handler) HandleExecutionSubmission(message []byte, header []kafka.Heade
 	ctx, span := h.CreateOrGetSpan("HandleExecutionSubmission", header)
 	defer span.End()
 
-	handlerLogger.Info("Received message from submission", string(message))
+	handlerLogger.Info("Received message from submission", "message", string(message))
 	submission := repository.ExecutionSubmissionDTO{}
 	err := json.Unmarshal(message, &submission)
 	if err != nil {
-		handlerLogger.Error("Failed to unmarshal message", err)
+		handlerLogger.Error("Failed to unmarshal message", "error", err)
 		span.RecordError(err)
 		return
 	}
@@ -260,7 +262,7 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 		return
 	}
 
-	err = ProduceMessage(writer, h.PassHeader(ctx), message)
+	err = h.produceMessageFunction(writer, h.PassHeader(ctx), message)
 	if err != nil {
 		state.Status = repository.FAILED
 		h.executionRepository.UpdateState(context.Background(), state)
@@ -368,7 +370,7 @@ func (h *Handler) HandleServiceResponse(message []byte, header []kafka.Header) {
 			log.Printf("Failed to marshal message: %s\n", err)
 			// TODO manejar este caso
 		}
-		err = ProduceMessage(h.executionStepsWriter, h.PassHeader(ctx), bytes)
+		err = h.produceMessageFunction(h.executionStepsWriter, h.PassHeader(ctx), bytes)
 		if err != nil {
 			log.Printf("Failed to produce message: %s\n", err)
 			// TODO manejar este caso
