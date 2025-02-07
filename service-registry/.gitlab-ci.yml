@@ -1,6 +1,0 @@
-include:
-  - local: 'gitlab-ci-template.yml'
-    inputs:
-      microservice-name: 'service-registry'
-      directory-name: 'service-registry'
-      environment: 'dev'
