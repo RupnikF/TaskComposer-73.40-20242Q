@@ -13,16 +13,6 @@ run-scheduler-pipeline:
         - scheduler/*
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
-run-service-registry-pipeline:
-  stage: pipeline
-  trigger:
-    include: service-registry/.gitlab-ci.yml
-    strategy: depend
-  rules:
-    - changes:
-        - service-registry/*
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-
 run-workflow-manager-pipeline:
   stage: pipeline
   trigger:
@@ -51,6 +41,16 @@ run-s3-service-pipeline:
   rules:
     - changes:
         - s3-service/*
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+run-ubuntu-service-pipeline:
+  stage: pipeline
+  trigger:
+    include: ubuntu-service/.gitlab-ci.yml
+    strategy: depend
+  rules:
+    - changes:
+        - ubuntu-service/*
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 e2e-test:
