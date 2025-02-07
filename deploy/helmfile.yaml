@@ -201,8 +201,10 @@ releases:
     namespace: default
     chart: ./nfs-pv
     values:
-      - names: ["echo-pv", "s3-pv"]
-      - storage: "6Gi"
+      - names:
+          - "echo-pv"
+          - "s3-pv"
+      - storage: "2Gi"
       - accessMode: "ReadWriteMany"
       - nfsServer: {{ requiredEnv "NFS_SERVER" }}
       - nfsPath: "/mnt/nfs"
