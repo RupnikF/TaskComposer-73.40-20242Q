@@ -13,6 +13,7 @@ run-scheduler-pipeline:
         - scheduler/*
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
+
 run-workflow-manager-pipeline:
   stage: pipeline
   trigger:
@@ -59,7 +60,6 @@ e2e-test:
   - echo "E2E test"
   needs:
   - job: run-scheduler-pipeline
-  - job: run-service-registry-pipeline
   - job: run-workflow-manager-pipeline
   - job: run-echo-service-pipeline
   - job: run-s3-service-pipeline
@@ -84,7 +84,6 @@ deploy-to-aws:
     - helmfile apply
   needs:
     - job: run-scheduler-pipeline
-    - job: run-service-registry-pipeline
     - job: run-workflow-manager-pipeline
     - job: run-echo-service-pipeline
     - job: run-s3-service-pipeline
