@@ -40,6 +40,19 @@ func (r *ExecutionRepository) GetExecutionByUUID(uuid string) *Execution {
 	return &execution
 }
 
+func (r *ExecutionRepository) GetExecutionsByJobID(jobID string) []*Execution {
+	var executions []Execution
+	tx := r.db.Preload("State").Preload("Steps").Preload("State.Outputs").Where("job_id = ?", jobID).Find(&executions)
+	if tx.Error != nil {
+		log.Printf("Failed to get executions: %v", tx.Error)
+	}
+	output := make([]*Execution, len(executions))
+	for i, execution := range executions {
+		output[i] = &execution
+	}
+	return output
+}
+
 func (r *ExecutionRepository) UpdateState(ctx context.Context, state *State) {
 	tx := r.db.WithContext(ctx).Save(state)
 	if tx.Error != nil {

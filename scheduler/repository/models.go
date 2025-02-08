@@ -94,4 +94,5 @@ type Execution struct {
 	State         *State
 	Steps         []*Step
 	Params        *ExecutionParams
+	JobID         string
 }
