@@ -2,7 +2,7 @@ import json
 from typing import List, Optional, Tuple
 import boto3
 import os, sys, threading
-from confluent_kafka import Consumer, KafkaError
+from confluent_kafka import Consumer, KafkaError, Producer
 
 from flask import Flask, jsonify
 import logging
@@ -51,7 +51,7 @@ app = Flask(__name__)
         "aws_secret_key": "secret-key
         "aws_region": "region"
     }
-    "traceId": "123",
+    "traceId": "",
 }
 """
 
@@ -71,26 +71,58 @@ def create_s3_client(access_key, secret_key, session_token, region):
         aws_session_token=session_token,
     ).client('s3')
 
-def download_from_s3(s3_client, bucket_name, s3_key, file_path):
+def write_to_kafka(execution_id, status, path=None, error=None):
+    """Writes a result message to Kafka."""
+    producer_config = {
+        "bootstrap.servers": KAFKA_BROKER
+    }
+    producer = Producer(producer_config)
+    topic = OUTPUT_TOPIC
+    body = {
+        "status": status
+    }
+    if path:
+        body["path"] = path
+    if error:
+        body["error_msg"] = error
+    message = json.dumps({
+        "executionId": execution_id,
+        "outputs": body
+    }).encode("utf-8")
+    try:
+        logger.info(f"Writing to Kafka: {message}")
+        producer.produce(topic, message)
+        producer.flush()
+    except Exception as e:
+        logger.info(f"Error writing to Kafka: {e}")
+
+def download_from_s3(execution_id, s3_client, bucket_name, s3_key, file_path):
     """Downloads a file from S3 to the local filesystem."""
     try:
         logger.info(f"Downloading from S3: bucket={bucket_name}, key={s3_key} to {file_path}")
         s3_client.download_file(bucket_name, s3_key, file_path)
         logger.info("Download successful!")
+        write_to_kafka(execution_id, "success", path=file_path)
     except Exception as e:
-        logger.info(f"Error downloading from S3: {e}")
+        error_msg = f"Error downloading from S3: {e}"
+        logger.error(error_msg)
+        write_to_kafka(execution_id, "error", error=error_msg)
 
-def upload_to_s3(s3_client, bucket_name, s3_key, file_path):
+def upload_to_s3(execution_id, s3_client, bucket_name, s3_key, file_path):
     """Uploads a local file to S3."""
     try:
         if not os.path.isfile(file_path):
-            logger.info(f"File does not exist: {file_path}")
+            logger.error(f"File does not exist: {file_path}")
+            write_to_kafka(execution_id, "error", error=f"File does not exist: {file_path}")
             return
         logger.info(f"Uploading to S3: {file_path} to bucket={bucket_name}, key={s3_key}")
         s3_client.upload_file(file_path, bucket_name, s3_key)
         logger.info("Upload successful!")
+        write_to_kafka(execution_id, "success", path=f"s3://{bucket_name}/{s3_key}")
     except Exception as e:
-        logger.info(f"Error uploading to S3: {e}")
+        error_msg = f"Error uploading to S3: {e}"
+        logger.error(error_msg)
+        write_to_kafka(execution_id, "error", error=error_msg)
 
 def extract_ctx(kafka_message):
     headers: Optional[List[Tuple[str, bytes]]] = kafka_message.headers()
@@ -111,7 +143,7 @@ def process_message(message):
         try:
             data = json.loads(message.value().decode("utf-8"))
             span.set_attribute("data", data)
-            
+            execution_id = data.get("executionId")
             task = data.get("taskName")
             inputs = data.get("inputs")
             file_path = f"{FILES_BASE_PATH}/{inputs.get("file_path")}"
@@ -123,14 +155,18 @@ def process_message(message):
             aws_session_token = inputs.get("aws_session_token")
 
             # Validate required fields
-            if not all([task, file_path, bucket_name, s3_key, aws_access_key, aws_secret_key, aws_region]):
-                span.record_exception(Exception("Invalid message: missing required fields"))
-                logger.info("Invalid message: missing required fields")
+            if not all([execution_id, task, file_path, bucket_name, s3_key, aws_access_key, aws_secret_key, aws_region]):
+                exc_msg = "Invalid message: missing required fields"
+                span.record_exception(Exception(exc_msg))
+                logger.error(exc_msg)
+                write_to_kafka(execution_id, "error", error=exc_msg)
                 return
             
             if task.lower() not in ["download", "upload"]:
-                span.record_exception(Exception(f"Unsupported task: {task}"))
-                logger.info(f"Unsupported task: {task}")
+                exc_msg = f"Unsupported task: {task}"
+                span.record_exception(Exception(exc_msg))
+                logger.error(exc_msg)
+                write_to_kafka(execution_id, "error", error=exc_msg)
                 return
 
             # Create S3 client
@@ -138,16 +174,23 @@ def process_message(message):
 
             # Perform operation
             if task.lower() == "download":
-                download_from_s3(s3_client, bucket_name, s3_key, file_path)
+                download_from_s3(execution_id, s3_client, bucket_name, s3_key, file_path)
             elif task.lower() == "upload":
-                upload_to_s3(s3_client, bucket_name, s3_key, file_path)
+                upload_to_s3(execution_id, s3_client, bucket_name, s3_key, file_path)
                 
             # inject_ctx(span, message) when sending the message
 
         except json.JSONDecodeError:
-            logger.info("Invalid message format: Not a valid JSON")
+            exc_msg = "Invalid message format: Not a valid JSON"
+            logger.error(exc_msg)
+            if execution_id:
+                write_to_kafka(execution_id, "error", error="Invalid message format: Not a valid JSON")
         except Exception as e:
-            logger.info(f"Error processing message: {e}")
+            exc_msg = f"Error processing message: {e}"
+            logger.error(exc_msg)
+            if execution_id:
+                write_to_kafka(execution_id, "error", error=exc_msg)
+
 
 def consume_kafka_messages():
     consumer_config = {
