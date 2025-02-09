@@ -135,14 +135,30 @@ func main() {
 
 	r.GET("/executions/:uuid", func(c *gin.Context) {
 		stringUUID := c.Param("uuid")
-		state := executionRepository.GetExecutionByUUID(stringUUID).State
-		if state == nil {
-			c.JSON(404, gin.H{
-				"error": "execution not found",
-			})
-			return
+		addCron := c.DefaultQuery("addCron", "false")
+		if addCron == "true" {
+			executions := executionRepository.GetExecutionsByJobID(stringUUID)
+			if executions == nil || len(executions) == 0 {
+				c.JSON(204, gin.H{
+					"message": "no executions found",
+				})
+			}
+			output := make([]repository.ExecutionStateResponseDTO, len(executions))
+			for i, execution := range executions {
+				output[i] = execution.State.ToResponseStateDTO()
+			}
+			c.JSON(200, output)
+		} else {
+			state := executionRepository.GetExecutionByUUID(stringUUID).State
+			if state == nil {
+				c.JSON(404, gin.H{
+					"error": "execution not found",
+				})
+				return
+			}
+			c.JSON(200, state.ToResponseStateDTO())
 		}
-		c.JSON(200, state.ToResponseStateDTO())
+
 	})
 	r.POST("/cancel-execution/:uuid", func(c *gin.Context) {
 		stringUUID := c.Param("uuid")

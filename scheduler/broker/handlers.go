@@ -94,6 +94,7 @@ func (h *Handler) HandleExecutionSubmission(message []byte, header []kafka.Heade
 		if execution.Params.CronDefinition.Valid {
 			h.jobsRepository.CreateCronJob(execution.Params.CronDefinition.String, ctx, func() {
 				executionCopy := submission.ToExecution(repository.PENDING)
+				executionCopy.JobID = executionCopy.ExecutionUUID
 				if !*useUUID {
 					executionCopy.ExecutionUUID = uuid.New().String()
 				} else {
