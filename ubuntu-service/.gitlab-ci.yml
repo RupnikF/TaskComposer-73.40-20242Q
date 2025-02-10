@@ -1,6 +1,6 @@
 include:
   - local: 'gitlab-ci-template.yml'
     inputs:
-      microservice-name: 'echo-service'
-      directory-name: 'echo-service'
+      microservice-name: 'ubuntu-service'
+      directory-name: 'ubuntu-service'
       environment: 'dev'

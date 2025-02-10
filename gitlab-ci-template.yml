@@ -56,7 +56,7 @@ build-images:
 unit-test:
   stage: test
   script:
-  - cd $[[ inputs.directory-name ]]/.scripts/unit
+  - cd $[[ inputs.directory-name ]]/scripts/unit
   - chmod +x run.sh
   - sh run.sh
   needs:
@@ -68,7 +68,7 @@ unit-test:
 integration-test:
   stage: test
   script:
-  - cd $[[ inputs.directory-name ]]/.scripts/integration
+  - cd $[[ inputs.directory-name ]]/scripts/integration
   - chmod +x run.sh
   - sh run.sh
   needs:
@@ -81,7 +81,7 @@ integration-test:
 component-test:
   stage: test
   script:
-  - cd $[[ inputs.directory-name ]]/.scripts/component
+  - cd $[[ inputs.directory-name ]]/scripts/component
   - chmod +x run.sh
   - sh run.sh
   needs:
@@ -94,7 +94,7 @@ component-test:
 functional-test:
   stage: test
   script:
-  - cd $[[ inputs.directory-name ]]/.scripts/functional
+  - cd $[[ inputs.directory-name ]]/scripts/functional
   - chmod +x run.sh
   - sh run.sh
   needs:
