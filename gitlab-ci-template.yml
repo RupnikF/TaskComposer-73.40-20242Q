@@ -6,6 +6,8 @@ spec:
       type: string
     environment:
       type: string
+    test-imgae:
+        type: string
 
 ---
 
@@ -63,11 +65,11 @@ build-images:
 
 unit-test:
   stage: test
+  image: $[[ inputs.test-image ]]
   script:
   - cd $[[ inputs.directory-name ]]/scripts/unit
   - chmod +x run.sh
   - sh run.sh
-  privileged: true
   needs:
   - job: build-images
     artifacts: true
@@ -80,7 +82,6 @@ integration-test:
   - cd $[[ inputs.directory-name ]]/scripts/integration
   - chmod +x run.sh
   - sh run.sh
-  privileged: true
   needs:
   - job: unit-test
   - job: build-images
@@ -94,7 +95,6 @@ component-test:
   - cd $[[ inputs.directory-name ]]/scripts/component
   - chmod +x run.sh
   - sh run.sh
-  privileged: true
   needs:
   - job: integration-test
   - job: build-images
@@ -108,7 +108,6 @@ functional-test:
   - cd $[[ inputs.directory-name ]]/scripts/functional
   - chmod +x run.sh
   - sh run.sh
-  privileged: true
   needs:
   - job: component-test
   - job: build-images
