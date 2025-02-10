@@ -3,10 +3,12 @@ module scheduler
 go 1.23.3
 
 require (
+	github.com/docker/go-connections v0.5.0
 	github.com/go-co-op/gocron-etcd-elector v0.0.0-20240725153733-356e7353bf22
 	github.com/go-co-op/gocron/v2 v2.14.0
 	github.com/goccy/go-json v0.10.3
 	github.com/google/uuid v1.6.0
+	github.com/lib/pq v1.10.9
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
 	github.com/uptrace/opentelemetry-go-extra/otelgorm v0.3.2
@@ -39,7 +41,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/docker v27.1.1+incompatible // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-co-op/gocron v1.37.0 // indirect
