@@ -4,3 +4,4 @@ include:
       microservice-name: 's3-service'
       directory-name: 's3-service'
       environment: 'dev'
+      test-image: 'docker:latest'

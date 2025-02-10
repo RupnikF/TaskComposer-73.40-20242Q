@@ -24,7 +24,7 @@ func setupTestDB() (func(), *ExecutionRepository, error) {
 			"POSTGRES_PASSWORD": "password",
 			"POSTGRES_DB":       "testdb",
 		},
-		WaitingFor: wait.ForListeningPort("5432/tcp").WithStartupTimeout(60 * time.Second),
+		WaitingFor: wait.ForListeningPort("5432/tcp").WithStartupTimeout(120 * time.Second),
 	}
 
 	postgresC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -36,7 +36,7 @@ func setupTestDB() (func(), *ExecutionRepository, error) {
 	}
 
 	// Get the container's host and port
-	host, _ := postgresC.Host(ctx)
+	host := "localhost"
 	port, _ := postgresC.MappedPort(ctx, "5432")
 
 	dsn := fmt.Sprintf("host=%s port=%s user=postgres password=password dbname=testdb sslmode=disable", host, port.Port())

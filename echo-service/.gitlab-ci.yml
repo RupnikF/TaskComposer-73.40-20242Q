@@ -4,3 +4,4 @@ include:
       microservice-name: 'echo-service'
       directory-name: 'echo-service'
       environment: 'dev'
+      test-image: 'docker:latest'

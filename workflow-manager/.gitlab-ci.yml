@@ -4,3 +4,4 @@ include:
       microservice-name: 'workflow-manager'
       directory-name: 'workflow-manager'
       environment: 'dev'
+      test-image: 'docker:latest'
