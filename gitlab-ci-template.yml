@@ -12,11 +12,18 @@ spec:
 image: "docker:latest"
 
 services:
-  - docker:dind
+  - name: docker:dind
+    #Disable TLS to avoid docker startup interruption
+    command: ["--tls=false"]
 
 variables:
   DOCKER_BUILDKIT: 1
   IMAGE_BASE: "$CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME"
+  #For TestContainers withouth TLS
+  DOCKER_HOST: "tcp://docker:2375"
+  DOCKER_TLS_CERTDIR: ""
+  #Better Performance
+  DOCKER_DRIVER: overlay2
 
 stages:
   - install

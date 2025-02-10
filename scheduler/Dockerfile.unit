@@ -9,4 +9,4 @@ RUN go mod download && go mod verify
 COPY . .
 ENV ENVIRONMENT="unit"
 
-ENTRYPOINT [ "go", "test", "./..." ]
+ENTRYPOINT [ "go", "test", "./...", "-v"]
