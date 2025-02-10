@@ -4,6 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
+	"log/slog"
+	"net/http"
+	"os"
+	"ubuntu-service/service"
+
 	"github.com/joho/godotenv"
 	kafka "github.com/segmentio/kafka-go"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
@@ -18,11 +25,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
-	"io"
-	"log"
-	"net/http"
-	"os"
-	"ubuntu-service/service"
 )
 
 //TIP <p>To run your code, right-click the code and select <b>Run</b>.</p> <p>Alternatively, click
@@ -132,7 +134,7 @@ func initLogger() (context.Context, *setupLog.LoggerProvider) {
 	// Create the OTLP log exporter that sends logs to configured destination
 	logExporter, err := otlploghttp.New(ctx)
 	if err != nil {
-		fmt.Printf("Error initializing logger", err)
+		fmt.Printf("Error initializing logger, %s", err)
 	}
 
 	// Create the logger provider
@@ -156,7 +158,7 @@ func main() {
 
 	err := initTracer()
 	if err != nil {
-		logger.Info("Error initiating tracer", err)
+		logger.Error("Error initializing tracer", slog.Any("err", err))
 	}
 
 	HostPort := os.Getenv("HOST_PORT")
@@ -187,18 +189,18 @@ func main() {
 		for {
 			msg, err := reader.ReadMessage(context.Background())
 			if err != nil {
-				logger.Error("Error reading message:", err)
+				logger.Error("Error reading message:", slog.Any("err", err))
 			} else {
 				ctx, span := CreateOrGetSpan("ubuntu-service", msg.Headers)
 				var request TaskRequest
 				err := json.Unmarshal(msg.Value, &request)
 				if err != nil {
-					logger.Error("Error unmarshaling message:", err)
+					logger.Error("Error unmarshaling message:", slog.Any("err", err))
 					span.RecordError(err)
 					continue
 				}
 				span.SetAttributes(attribute.String("task.name", request.TaskName))
-				logger.Debug("Received message: %s", string(msg.Value))
+				logger.Debug("Received message: %s", slog.Any("msg", string(msg.Value)))
 				var kafkaResponse Response
 				switch request.TaskName {
 				case "bash":
@@ -229,14 +231,14 @@ func main() {
 
 				finalMsg, err := json.Marshal(kafkaResponse)
 				if err != nil {
-					logger.Error("Error marshaling final response: %v", err)
+					logger.Error("Error marshaling final response", slog.Any("err", err))
 					span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
 					continue
 				}
-				logger.Info("Sending response: %s", string(finalMsg))
+				logger.Info("Sending response:", slog.Any("response", string(finalMsg)))
 				err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg, Headers: PassHeader(ctx)})
 				if err != nil {
-					logger.Error("Error writing final response: %v", err)
+					logger.Error("Error writing final response", slog.Any("err", err))
 				}
 			}
 		}

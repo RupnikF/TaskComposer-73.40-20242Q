@@ -56,7 +56,9 @@ build-images:
 unit-test:
   stage: test
   script:
-  - echo "Unit test"
+  - cd $[[ inputs.directory-name ]]/.scripts/unit
+  - chmod +x run.sh
+  - sh run.sh
   needs:
   - job: build-images
     artifacts: true
@@ -66,7 +68,9 @@ unit-test:
 integration-test:
   stage: test
   script:
-  - echo "Integration test"
+  - cd $[[ inputs.directory-name ]]/.scripts/integration
+  - chmod +x run.sh
+  - sh run.sh
   needs:
   - job: unit-test
   - job: build-images
@@ -77,7 +81,9 @@ integration-test:
 component-test:
   stage: test
   script:
-  - echo "Component test"
+  - cd $[[ inputs.directory-name ]]/.scripts/component
+  - chmod +x run.sh
+  - sh run.sh
   needs:
   - job: integration-test
   - job: build-images
@@ -88,7 +94,9 @@ component-test:
 functional-test:
   stage: test
   script:
-  - echo "Functional test"
+  - cd $[[ inputs.directory-name ]]/.scripts/functional
+  - chmod +x run.sh
+  - sh run.sh
   needs:
   - job: component-test
   - job: build-images

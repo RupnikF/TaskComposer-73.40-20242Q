@@ -3,11 +3,12 @@ package service
 import (
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ShellResponse struct {
@@ -55,7 +56,7 @@ func Eval(inputs map[string]interface{}, span trace.Span) (string, error) {
 		return "", err
 	}
 	span.SetAttributes(attribute.String("exp", expression))
-	out, err := exec.Command("bash", "-c", fmt.Sprintf("echo \"%s\" | bc", expression)).Output()
+	out, err := exec.Command("bash", "-c", fmt.Sprintf("echo $((%s))", expression)).Output()
 	if err != nil {
 		span.RecordError(err)
 		return "", err
