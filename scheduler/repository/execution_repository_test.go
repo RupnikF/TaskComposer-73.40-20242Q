@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"gorm.io/driver/postgres"
@@ -16,7 +17,6 @@ import (
 func setupTestDB() (func(), *ExecutionRepository, error) {
 	ctx := context.Background()
 
-	// Create PostgreSQL container
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:latest",
 		ExposedPorts: []string{"5432/tcp"},
@@ -24,7 +24,10 @@ func setupTestDB() (func(), *ExecutionRepository, error) {
 			"POSTGRES_PASSWORD": "password",
 			"POSTGRES_DB":       "testdb",
 		},
-		WaitingFor: wait.ForListeningPort("5432/tcp").WithStartupTimeout(120 * time.Second),
+		WaitingFor: wait.ForSQL("5432/tcp", "postgres",
+			func(host string, port nat.Port) string {
+				return fmt.Sprintf("host=%s port=%s user=postgres password=password dbname=testdb sslmode=disable", host, port.Port())
+			}).WithStartupTimeout(60 * time.Second),
 	}
 
 	postgresC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -35,17 +38,16 @@ func setupTestDB() (func(), *ExecutionRepository, error) {
 		return nil, nil, err
 	}
 
-	// Get the container's host and port
-	host := "localhost"
+	host, _ := postgresC.Host(ctx)
 	port, _ := postgresC.MappedPort(ctx, "5432")
 
 	dsn := fmt.Sprintf("host=%s port=%s user=postgres password=password dbname=testdb sslmode=disable", host, port.Port())
 
-	// Connect to the PostgreSQL database
+	fmt.Println("Connecting to:", dsn)
+
 	var db *gorm.DB
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		// panic("failed to connect to database")
 		return nil, nil, err
 	}
 
