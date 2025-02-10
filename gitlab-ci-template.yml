@@ -6,7 +6,7 @@ spec:
       type: string
     environment:
       type: string
-    test-imgae:
+    test-image:
         type: string
 
 ---
