@@ -4,4 +4,4 @@ include:
       microservice-name: 'workflow-manager'
       directory-name: 'workflow-manager'
       environment: 'dev'
-      test-image: 'maven:3.9.9-eclipse-temurin-23-alpine'
+      test-image: 'maven:3.9.9-amazoncorretto-23'
