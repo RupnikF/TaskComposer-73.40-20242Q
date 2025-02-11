@@ -100,19 +100,19 @@ func (h *Handler) HandleExecutionSubmission(message []byte, header []kafka.Heade
 				} else {
 					*useUUID = false
 				}
-				h.executionRepository.CreateExecution(context.Background(), executionCopy)
+				h.executionRepository.CreateExecution(ctx, executionCopy)
 				stepToExecute := executionCopy.Steps[0].ToExecutionStepDTO()
 				h.EnqueueExecutionStep(stepToExecute, ctx, span)
 			}, execution.ExecutionUUID)
 		} else if execution.Params.DelayedSeconds > 0 {
 			h.jobsRepository.CreateDelayedJob(execution.Params.DelayedSeconds, ctx, func() {
-				h.executionRepository.CreateExecution(context.Background(), execution)
+				h.executionRepository.CreateExecution(ctx, execution)
 				stepToExecute := execution.Steps[0].ToExecutionStepDTO()
 				h.EnqueueExecutionStep(stepToExecute, ctx, span)
 			}, execution.ExecutionUUID)
 		}
 	} else {
-		h.executionRepository.CreateExecution(context.Background(), execution)
+		h.executionRepository.CreateExecution(ctx, execution)
 		stepToExecute := execution.Steps[0].ToExecutionStepDTO()
 		h.EnqueueExecutionStep(stepToExecute, ctx, span)
 	}
@@ -178,7 +178,7 @@ func (h *Handler) HandleExecutionStep(message []byte, header []kafka.Header) {
 		return
 	}
 
-	state := h.executionRepository.GetStateByExecutionID(step.ExecutionID)
+	state := h.executionRepository.GetStateByExecutionID(ctx, step.ExecutionID)
 
 	if state.Status != repository.PENDING {
 		log.Printf("Execution not pending: %s\n", state.Status)
@@ -312,7 +312,7 @@ func (h *Handler) HandleServiceResponse(message []byte, header []kafka.Header) {
 		return
 	}
 
-	execution := h.executionRepository.GetExecutionById(response.ExecutionID)
+	execution := h.executionRepository.GetExecutionById(ctx, response.ExecutionID)
 	if execution == nil {
 		log.Printf("Execution not found: %d\n", response.ExecutionID)
 		span.RecordError(err)

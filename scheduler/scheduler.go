@@ -150,7 +150,7 @@ func main() {
 		stringUUID := c.Param("uuid")
 		addCron := c.DefaultQuery("addCron", "false")
 		if addCron == "true" {
-			executions := executionRepository.GetExecutionsByJobID(stringUUID)
+			executions := executionRepository.GetExecutionsByJobID(c.Request.Context(), stringUUID)
 			if executions == nil || len(executions) == 0 {
 				c.JSON(204, gin.H{
 					"message": "no executions found",
@@ -162,7 +162,7 @@ func main() {
 			}
 			c.JSON(200, output)
 		} else {
-			state := executionRepository.GetExecutionByUUID(stringUUID).State
+			state := executionRepository.GetExecutionByUUID(c.Request.Context(), stringUUID).State
 			if state == nil {
 				c.JSON(404, gin.H{
 					"error": "execution not found",
@@ -175,7 +175,7 @@ func main() {
 	})
 	r.POST("/cancel-execution/:uuid", func(c *gin.Context) {
 		stringUUID := c.Param("uuid")
-		execution := executionRepository.GetExecutionByUUID(stringUUID)
+		execution := executionRepository.GetExecutionByUUID(c.Request.Context(), stringUUID)
 		if execution == nil {
 			c.JSON(404, gin.H{
 				"error": "execution not found",

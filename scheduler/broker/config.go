@@ -91,20 +91,20 @@ func Initialize(serviceTopics []string) {
 	topicConfigs := []kafka.TopicConfig{
 		{
 			Topic:             GetExecutionKafkaTopic(),
-			NumPartitions:     1,
-			ReplicationFactor: 1,
+			NumPartitions:     3,
+			ReplicationFactor: 2,
 		},
 		{
 			Topic:             GetStepKafkaTopic(),
-			NumPartitions:     1,
-			ReplicationFactor: 1,
+			NumPartitions:     3,
+			ReplicationFactor: 2,
 		},
 	}
 	for _, topic := range serviceTopics {
 		topicConfigs = append(topicConfigs, kafka.TopicConfig{
 			Topic:             topic,
-			NumPartitions:     1,
-			ReplicationFactor: 1,
+			NumPartitions:     3,
+			ReplicationFactor: 2,
 		})
 	}
 

@@ -6,7 +6,13 @@ metadata:
 spec:
   routes:                          
   - kind: Rule
-    match: (PathPrefix(`/executions`) && Method(`GET`)) || (Method(`POST`) && PathPrefix(`/cancel-execution`))
+    match: PathPrefix(`/executions`) && Method(`GET`)
+    services:                       
+    - kind: Service
+      name: scheduler
+      port: 8080
+  - kind: Rule
+    match: PathPrefix(`/cancel-execution`) && Method(`POST`)
     services:                       
     - kind: Service
       name: scheduler

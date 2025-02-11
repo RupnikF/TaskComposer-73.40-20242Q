@@ -170,7 +170,7 @@ func TestExecutionRepository_GetExecutionById(t *testing.T) {
 	defer cleanup()
 	testExec := GetGenericExecution()
 	repo.db.Create(&testExec)
-	exec := repo.GetExecutionById(testExec.ID)
+	exec := repo.GetExecutionById(context.Background(), testExec.ID)
 	if exec == nil {
 		t.Fatalf("failed to get execution by id: %v", err)
 	}
@@ -188,7 +188,7 @@ func TestExecutionRepository_GetExecutionByUUID(t *testing.T) {
 	defer cleanup()
 	testExec := GetGenericExecution()
 	repo.db.Create(&testExec)
-	exec := repo.GetExecutionByUUID(testExec.ExecutionUUID)
+	exec := repo.GetExecutionByUUID(context.Background(), testExec.ExecutionUUID)
 	if exec == nil {
 		t.Fatalf("failed to get execution by uuid: %v", err)
 	}
@@ -232,7 +232,7 @@ func TestExecutionRepository_GetStateByExecutionID(t *testing.T) {
 	defer cleanup()
 	testExec := GetGenericExecution()
 	repo.db.Create(&testExec)
-	state := repo.GetStateByExecutionID(testExec.ID)
+	state := repo.GetStateByExecutionID(context.Background(), testExec.ID)
 	if state == nil {
 		t.Fatalf("failed to get state by execution id: %v", err)
 	}

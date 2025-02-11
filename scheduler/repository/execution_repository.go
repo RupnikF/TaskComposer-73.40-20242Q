@@ -23,26 +23,26 @@ func (r *ExecutionRepository) CreateExecution(ctx context.Context, execution *Ex
 	return execution.ID
 }
 
-func (r *ExecutionRepository) GetExecutionById(id uint) *Execution {
+func (r *ExecutionRepository) GetExecutionById(ctx context.Context, id uint) *Execution {
 	execution := Execution{}
-	tx := r.db.Preload("State").Preload("Steps").Preload("Steps.Inputs").Preload("State.Outputs").First(&execution, id)
+	tx := r.db.WithContext(ctx).Preload("State").Preload("Steps").Preload("Steps.Inputs").Preload("State.Outputs").First(&execution, id)
 	if tx.Error != nil {
 		log.Printf("Failed to get execution: %v", tx.Error)
 	}
 	return &execution
 }
-func (r *ExecutionRepository) GetExecutionByUUID(uuid string) *Execution {
+func (r *ExecutionRepository) GetExecutionByUUID(ctx context.Context, uuid string) *Execution {
 	execution := Execution{}
-	tx := r.db.Preload("State").Preload("Steps").Preload("State.Outputs").Where("execution_uuid = ?", uuid).First(&execution)
+	tx := r.db.WithContext(ctx).Preload("State").Preload("Steps").Preload("State.Outputs").Where("execution_uuid = ?", uuid).First(&execution)
 	if tx.Error != nil {
 		log.Printf("Failed to get execution: %v", tx.Error)
 	}
 	return &execution
 }
 
-func (r *ExecutionRepository) GetExecutionsByJobID(jobID string) []*Execution {
+func (r *ExecutionRepository) GetExecutionsByJobID(ctx context.Context, jobID string) []*Execution {
 	var executions []Execution
-	tx := r.db.Preload("State").Preload("Steps").Preload("State.Outputs").Where("job_id = ?", jobID).Find(&executions)
+	tx := r.db.WithContext(ctx).Preload("State").Preload("Steps").Preload("State.Outputs").Where("job_id = ?", jobID).Find(&executions)
 	if tx.Error != nil {
 		log.Printf("Failed to get executions: %v", tx.Error)
 	}
@@ -60,9 +60,9 @@ func (r *ExecutionRepository) UpdateState(ctx context.Context, state *State) {
 	}
 }
 
-func (r *ExecutionRepository) GetStateByExecutionID(executionID uint) *State {
+func (r *ExecutionRepository) GetStateByExecutionID(ctx context.Context, executionID uint) *State {
 	state := State{}
-	tx := r.db.Where("execution_id = ?", executionID).Preload("Arguments").Preload("Outputs").First(&state)
+	tx := r.db.WithContext(ctx).Where("execution_id = ?", executionID).Preload("Arguments").Preload("Outputs").First(&state)
 	if tx.Error != nil {
 		log.Printf("Failed to get state: %v", tx.Error)
 	}

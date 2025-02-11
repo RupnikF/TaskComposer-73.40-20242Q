@@ -27,7 +27,7 @@ func (h *Handler) ConditionalHandler(
 	span trace.Span,
 	ctx context.Context,
 ) {
-	execution := h.executionRepository.GetExecutionById(state.ExecutionID)
+	execution := h.executionRepository.GetExecutionById(ctx, state.ExecutionID)
 	leftValue, leftOk := inputs["leftValue"]
 	rightValue, rightOk := inputs["rightValue"]
 	operator, opOk := inputs["operator"]
