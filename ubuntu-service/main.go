@@ -138,11 +138,23 @@ func initLogger() (context.Context, *setupLog.LoggerProvider) {
 		fmt.Printf("Error initializing logger, %s", err)
 	}
 
+	resources, err := resource.New(
+		ctx,
+		resource.WithAttributes(
+			attribute.String("service.name", serviceName),
+			attribute.String("library.language", "go"),
+		),
+	)
+	if err != nil {
+		log.Printf("Could not set resources: %s", err)
+	}
+
 	// Create the logger provider
 	lp := setupLog.NewLoggerProvider(
 		setupLog.WithProcessor(
 			setupLog.NewBatchProcessor(logExporter),
 		),
+		setupLog.WithResource(resources),
 	)
 
 	global.SetLoggerProvider(lp)
