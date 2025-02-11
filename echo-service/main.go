@@ -222,6 +222,7 @@ func main() {
 					if err != nil {
 						logger.Error("Error marshaling final response: %v", err)
 						span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
+						span.End()
 						continue
 					}
 					logger.Info("Sending response: %s", string(finalMsg))
@@ -229,12 +230,13 @@ func main() {
 					if err != nil {
 						logger.Error("Error writing final response: %v", err)
 					}
+					span.End()
 				} else {
 					span.RecordError(fmt.Errorf("unknown task name: %s", request.TaskName))
 					finalMsg, err := json.Marshal(EchoResponse{
 						ExecutionId: request.ExecutionId,
 						Outputs: map[string]interface{}{
-							"error": map[string]interface{}{
+							"error": map[string]string{
 								"msg": "Invalid task",
 							},
 						},
@@ -242,6 +244,7 @@ func main() {
 					if err != nil {
 						span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
 						logger.Error("Error marshaling final response: %v", err)
+						span.End()
 						continue
 					}
 					err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg, Headers: PassHeader(ctx)})
@@ -249,6 +252,7 @@ func main() {
 						logger.Error("Error writing final response: %v", err)
 						span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
 					}
+					span.End()
 				}
 			}
 		}
