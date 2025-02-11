@@ -210,6 +210,7 @@ func main() {
 				if err != nil {
 					logger.Error("Error unmarshaling message:", slog.Any("err", err))
 					span.RecordError(err)
+					span.End()
 					continue
 				}
 				span.SetAttributes(attribute.String("task.name", request.TaskName))
@@ -246,6 +247,7 @@ func main() {
 				if err != nil {
 					logger.Error("Error marshaling final response", slog.Any("err", err))
 					span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
+					span.End()
 					continue
 				}
 				logger.Info("Sending response:", slog.Any("response", string(finalMsg)))
@@ -253,6 +255,7 @@ func main() {
 				if err != nil {
 					logger.Error("Error writing final response", slog.Any("err", err))
 				}
+				span.End()
 			}
 		}
 	}()
