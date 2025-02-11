@@ -8,6 +8,7 @@ import com.taskcomposer.workflow_manager.services.exceptions.ServiceNotFoundExce
 import com.taskcomposer.workflow_manager.services.exceptions.TaskNotFoundException;
 import com.taskcomposer.workflow_manager.services.exceptions.WorkflowAlreadyExistsException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -20,6 +21,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@Tag("unit")
 class WorkflowServiceTest {
 
     @Mock

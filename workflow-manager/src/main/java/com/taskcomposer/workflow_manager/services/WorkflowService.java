@@ -43,13 +43,15 @@ public class WorkflowService {
         if (workflowRepository.existsByWorkflowName(workflow.getWorkflowName())) {
             throw new WorkflowAlreadyExistsException(workflow.getWorkflowName());
         }
-        for (Step step : workflow.getSteps()) {
-            Optional<com.taskcomposer.workflow_manager.repositories.model.Service> service = serviceRepository.getServiceByName(step.getService());
-            if (service.isEmpty()) {
-                throw new ServiceNotFoundException(step.getService());
-            }
-            if (!service.get().isTaskInService(step.getTask())) {
-                throw new TaskNotFoundException(step.getService(), step.getTask());
+        if (workflow.getSteps() != null) {
+            for (Step step : workflow.getSteps()) {
+                Optional<com.taskcomposer.workflow_manager.repositories.model.Service> service = serviceRepository.getServiceByName(step.getService());
+                if (service.isEmpty()) {
+                    throw new ServiceNotFoundException(step.getService());
+                }
+                if (!service.get().isTaskInService(step.getTask())) {
+                    throw new TaskNotFoundException(step.getService(), step.getTask());
+                }
             }
         }
         return workflowRepository.save(workflow);

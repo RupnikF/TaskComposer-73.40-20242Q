@@ -4,6 +4,7 @@ import boto3
 import os, sys, threading
 from confluent_kafka import Consumer, KafkaError, Producer
 
+from opentelemetry.sdk.resources import Resource
 from flask import Flask, jsonify
 import logging
 from opentelemetry.sdk.trace import TracerProvider
@@ -13,10 +14,13 @@ from opentelemetry.sdk.trace.export import (
 )
 from opentelemetry import trace
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
-provider = TracerProvider()
+provider = TracerProvider(resource=Resource.create({"service.name": "s3-service"}))
 processor = BatchSpanProcessor(ConsoleSpanExporter())
+processor_prod = BatchSpanProcessor(OTLPSpanExporter())
 provider.add_span_processor(processor)
+provider.add_span_processor(processor_prod)
 
 tracer = trace.get_tracer("s3-service")
 

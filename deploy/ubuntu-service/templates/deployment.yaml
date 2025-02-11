@@ -52,7 +52,7 @@ spec:
             - name: "ENV_MODE"
               value: "production"
             - name: "SERVICE_NAME"
-              value: "echo-service"
+              value: "ubuntu-service"
             - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
               value: "logging-signoz-otel-collector.default.svc.cluster.local:4318"
             - name: "OTEL_EXPORTER_OTLP_ENDPOINT_GRPC"
@@ -61,6 +61,12 @@ spec:
               value: "http://logging-signoz-otel-collector.default.svc.cluster.local:4318/v1/logs"
             - name: "HOST_PORT"
               value: "localhost:8080"
+            - name: "OTEL_SERVICE_NAME"
+              value: "ubuntu-service"
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "http://logging-signoz-otel-collector.default.svc.cluster.local:4317"
+            - name: "OTEL_EXPORTER_OTLP_PROTOCOL"
+              value: "grpc"
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

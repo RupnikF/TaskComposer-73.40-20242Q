@@ -53,6 +53,12 @@ spec:
               value: {{ .Values.service_name }}
             - name: "FILES_BASE_PATH"
               value: {{ .Values.files_base_path }}
+            - name: "OTEL_SERVICE_NAME"
+              value: "s3-service"
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "http://logging-signoz-otel-collector.default.svc.cluster.local:4317"
+            - name: "OTEL_EXPORTER_OTLP_PROTOCOL"
+              value: "grpc"
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
