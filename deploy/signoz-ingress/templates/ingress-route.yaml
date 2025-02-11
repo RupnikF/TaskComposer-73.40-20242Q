@@ -6,7 +6,7 @@ metadata:
 spec:
   routes:                          
   - kind: Rule
-    match: PathPrefix(`/`) && !(PathPrefix(`/triggers`) || Header(`Content-Type`, `application/grpc`) || PathPrefix(`/executions`) || PathPrefix(`/dashboard`) || PathPrefix(`/workflows`))
+    match: PathPrefix(`/`) && !(PathPrefix(`/triggers`)  || Header(`Content-Type`, `application/grpc`) || PathPrefix(`/executions`) || PathPrefix(`/cancel-execution`) || PathPrefix(`/dashboard`) || PathPrefix(`/workflows`))
     services:                       
     - kind: Service
       name: logging-signoz-frontend
