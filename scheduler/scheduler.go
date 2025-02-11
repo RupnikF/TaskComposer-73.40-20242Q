@@ -37,6 +37,7 @@ func initTracer() func(context.Context) error {
 	secureOption := otlptracegrpc.WithInsecure()
 
 	log.Printf("COLLECTOR_ENDPOINT_GRPC" + grpcCollectorURL)
+	log.Printf("SERVICE_NAME" + serviceName)
 	exporter, err := otlptrace.New(
 		context.Background(),
 		otlptracegrpc.NewClient(

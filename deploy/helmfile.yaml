@@ -23,7 +23,8 @@ releases:
           primary:
             size: "2Gi"
       - replication:
-          enabled: false
+          enabled: true
+          readReplicas: 1
       - metrics:
           enabled: false # No se si queremos esto
       - global:
@@ -36,9 +37,9 @@ releases:
       - kraft:
           clusterId: "1"
       - broker:
-          replicaCount: 2
+          replicaCount: 2  # Increased for HA
       - controller:
-          replicaCount: 1
+          replicaCount: 2  # Increased for HA
           controllerOnly: false
       - global:
           defaultStorageClass: "local-path"
@@ -47,7 +48,7 @@ releases:
             size: 2Gi
       - broker:
           persistence:
-              size: 2Gi
+            size: 2Gi
       - listeners:
           client:
             containerPort: 9092
@@ -59,7 +60,7 @@ releases:
             name: CONTROLLER
       - provisioning:
           numPartitions: 3
-          replicationFactor: 1
+          replicationFactor: 3  # Increased for HA
       - extraEnvVars:
           - name: KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE
             value: "true"
@@ -73,6 +74,7 @@ releases:
     values:
       - image:
           tag: "dev"
+      - replicaCount: 2
       - scheduler_db_host: "sch-db-postgresql"
       - scheduler_db_user: {{ requiredEnv "SCHEDULER_POSTGRES_USER" }}
       - scheduler_db_pass: {{ requiredEnv "SCHEDULER_POSTGRES_PASSWORD" }}
@@ -103,6 +105,7 @@ releases:
           storageClass: "local-path"
       - global:
           defaultStorageClass: "local-path"
+      - replicaCount: 2
   # Workflow Manager
   - name: wf-db
     namespace: workflow-manager
@@ -117,7 +120,8 @@ releases:
           primary:
             size: "2Gi"
       - replication:
-          enabled: false
+          enabled: true
+          readReplicas: 1
       - metrics:
           enabled: false # No se si queremos esto
       - global:
@@ -128,6 +132,7 @@ releases:
     values:
       - image:
           tag: "dev"
+      - replicaCount: 2
       - workflows_db_host: "wf-db-postgresql"
       - workflows_db_user: {{ requiredEnv "WORKFLOWS_POSTGRES_USER" }}
       - workflows_db_pass: {{ requiredEnv "WORKFLOWS_POSTGRES_PASSWORD" }}
@@ -141,6 +146,7 @@ releases:
     values:
       - image:
           tag: "dev"
+      - replicaCount: 2
       - kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
       - kafka_port: "9092"
       - input_topic: "echo_service_input"
@@ -165,6 +171,7 @@ releases:
     values:
       - image:
           tag: "dev"
+      - replicaCount: 2
       - kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
       - kafka_port: "9092"
       - input_topic: "s3_service_input"
@@ -189,10 +196,11 @@ releases:
     values:
       - image:
           tag: "dev"
+      - replicaCount: 2
       - kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
       - kafka_port: "9092"
-      - input_topic: "echo_service_input"
-      - output_topic: "echo_service_output"
+      - input_topic: "ubuntu_service_input"
+      - output_topic: "ubuntu_service_output"
       - pvc:
           name: "ubuntu-service-pv"
           accessMode: "ReadWriteMany"

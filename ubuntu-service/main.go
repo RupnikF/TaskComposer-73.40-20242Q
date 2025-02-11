@@ -45,7 +45,7 @@ func (t *TaskRequest) ToError(msg string) Response {
 	return Response{
 		ExecutionId: t.ExecutionId,
 		Outputs: map[string]interface{}{
-			"error": map[string]interface{}{
+			"error": map[string]string{
 				"msg": msg,
 			},
 		},
@@ -95,6 +95,7 @@ func initTracer() func(context.Context) error {
 	secureOption := otlptracegrpc.WithInsecure()
 
 	log.Printf("COLLECTOR_ENDPOINT_GRPC" + grpcCollectorURL)
+	log.Printf("SERVICE_NAME" + serviceName)
 	exporter, err := otlptrace.New(
 		context.Background(),
 		otlptracegrpc.NewClient(

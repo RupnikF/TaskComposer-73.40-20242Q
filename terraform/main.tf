@@ -54,7 +54,7 @@ resource "aws_instance" "master" {
 }
 
 resource "aws_instance" "node" {
-  count                  = 2
+  count                  = 3
   ami                    = local.ami
   instance_type          = local.instance_type
   key_name               = aws_key_pair.node-key.key_name
