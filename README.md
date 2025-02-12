@@ -1,6 +1,6 @@
 # TaskComposer
 
-## Pipeline for deploy manually
+## Pipeline for deploy manually 
 
 - Es necesario que se haya llenado con el .kube/config ($KUBE_CONFIG_FILE) del cluster de k8s y la IP del server NFS ($NFS_SERVER) en el CI/CD Variables
 - Correr un pipeline desde la pagina de GitLab en /Build/Pipelines/New Pipeline
@@ -9,6 +9,9 @@
 - Esperar a que se corra todo el pipeline
 - Darle a "Play" en el job de "deploy" para que se ejecute el script de deploy
 
+```
+El deploy de la aplicación se hace manualmente debido a que AWS educate no nos otorga un ambiente de Kubernetes estable. Si tuviesemos un ambiente que no se muera a la hora el deploy se haría automáticamente.
+```
 
 ## Signoz for Local
 ```
