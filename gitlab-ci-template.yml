@@ -78,6 +78,7 @@ unit-test:
 
 integration-test:
   stage: test
+  image: $[[ inputs.test-image ]]
   script:
   - cd $[[ inputs.directory-name ]]/scripts/integration
   - chmod +x run.sh
@@ -91,6 +92,7 @@ integration-test:
 
 component-test:
   stage: test
+  image: $[[ inputs.test-image ]]
   script:
   - cd $[[ inputs.directory-name ]]/scripts/component
   - chmod +x run.sh
@@ -104,6 +106,7 @@ component-test:
 
 functional-test:
   stage: test
+  image: $[[ inputs.test-image ]]
   script:
   - cd $[[ inputs.directory-name ]]/scripts/functional
   - chmod +x run.sh
