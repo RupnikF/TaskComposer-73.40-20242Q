@@ -57,11 +57,11 @@ func (cr *JobsRepository) CreateDelayedJob(delay uint, ctx context.Context, job 
 	}
 }
 
-func (cr *JobsRepository) CancelJob(jobUUID string) {
+func (cr *JobsRepository) CancelJob(jobUUID string) error {
 	scheduler := *cr.scheduler
 	identifier, parseErr := uuid.Parse(jobUUID)
 	if parseErr != nil {
 		log.Printf("Failed to parse UUID: %v\n", parseErr)
 	}
-	_ = scheduler.RemoveJob(identifier)
+	return scheduler.RemoveJob(identifier)
 }

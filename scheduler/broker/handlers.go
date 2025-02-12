@@ -106,6 +106,7 @@ func (h *Handler) HandleExecutionSubmission(message []byte, header []kafka.Heade
 			}, execution.ExecutionUUID)
 		} else if execution.Params.DelayedSeconds > 0 {
 			h.jobsRepository.CreateDelayedJob(execution.Params.DelayedSeconds, ctx, func() {
+				execution.JobID = execution.ExecutionUUID
 				h.executionRepository.CreateExecution(ctx, execution)
 				stepToExecute := execution.Steps[0].ToExecutionStepDTO()
 				h.EnqueueExecutionStep(stepToExecute, ctx, span)
