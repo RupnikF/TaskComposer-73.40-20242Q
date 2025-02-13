@@ -4,7 +4,6 @@ import boto3
 import os, sys, threading
 from confluent_kafka import Consumer, KafkaError, Producer
 
-from opentelemetry.sdk.resources import Resource
 from flask import Flask, jsonify
 import logging
 from opentelemetry.sdk.trace import TracerProvider
@@ -14,13 +13,10 @@ from opentelemetry.sdk.trace.export import (
 )
 from opentelemetry import trace
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
-provider = TracerProvider(resource=Resource.create({"service.name": "s3-service"}))
+provider = TracerProvider()
 processor = BatchSpanProcessor(ConsoleSpanExporter())
-processor_prod = BatchSpanProcessor(OTLPSpanExporter())
 provider.add_span_processor(processor)
-provider.add_span_processor(processor_prod)
 
 tracer = trace.get_tracer("s3-service")
 
@@ -67,11 +63,6 @@ OUTPUT_TOPIC = os.getenv("OUTPUT_TOPIC")
 SERVICE_NAME = os.getenv("SERVICE_NAME")
 FILES_BASE_PATH = os.getenv("FILES_BASE_PATH", "/data")
 
-producer_config = {
-    "bootstrap.servers": KAFKA_BROKER
-}
-producer = Producer(producer_config)
-
 class S3Service():
 
     def __init__(self, producer=None, consumer=None, input_topic=INPUT_TOPIC, output_topic=OUTPUT_TOPIC):
@@ -105,7 +96,7 @@ class S3Service():
             aws_session_token=session_token,
         ).client('s3')
 
-    def write_to_kafka(self, execution_id, status, path=None, error=None):
+    def write_to_kafka(self, execution_id, status, span, path=None, error=None):
         """Writes a result message to Kafka."""
         topic = self.output_topic
         body = {
@@ -121,38 +112,38 @@ class S3Service():
         }).encode("utf-8")
         try:
             logger.info(f"Writing to Kafka: {message}")
-            self.producer.produce(topic=topic, message=message)
+            self.producer.produce(topic=topic, value=message, headers=self.get_ctx_headers(span=span))
             self.producer.flush()
         except Exception as e:
             logger.info(f"Error writing to Kafka: {e}")
 
-    def download_from_s3(self, execution_id, s3_client, bucket_name, s3_key, file_path):
+    def download_from_s3(self, execution_id, s3_client, bucket_name, s3_key, file_path, span):
         """Downloads a file from S3 to the local filesystem."""
         try:
             logger.info(f"Downloading from S3: bucket={bucket_name}, key={s3_key} to {file_path}")
             s3_client.download_file(bucket_name, s3_key, file_path)
             logger.info("Download successful!")
-            self.write_to_kafka(execution_id, "success", path=file_path)
+            self.write_to_kafka(execution_id, "success", span, path=file_path)
         except Exception as e:
             error_msg = f"Error downloading from S3: {e}"
             logger.error(error_msg)
-            self.write_to_kafka(execution_id, "error", error=error_msg)
+            self.write_to_kafka(execution_id, "error", span, error=error_msg)
 
-    def upload_to_s3(self, execution_id, s3_client, bucket_name, s3_key, file_path):
+    def upload_to_s3(self, execution_id, s3_client, bucket_name, s3_key, file_path, span):
         """Uploads a local file to S3."""
         try:
             if not os.path.isfile(file_path):
                 logger.error(f"File does not exist: {file_path}")
-                self.write_to_kafka(execution_id, "error", error=f"File does not exist: {file_path}")
+                self.write_to_kafka(execution_id, "error", span, error=f"File does not exist: {file_path}")
                 return
             logger.info(f"Uploading to S3: {file_path} to bucket={bucket_name}, key={s3_key}")
             s3_client.upload_file(file_path, bucket_name, s3_key)
             logger.info("Upload successful!")
-            self.write_to_kafka(execution_id, "success", path=f"s3://{bucket_name}/{s3_key}")
+            self.write_to_kafka(execution_id, "success", span, path=f"s3://{bucket_name}/{s3_key}")
         except Exception as e:
             error_msg = f"Error uploading to S3: {e}"
             logger.error(error_msg)
-            self.write_to_kafka(execution_id, "error", error=error_msg)
+            self.write_to_kafka(execution_id, "error", span, error=error_msg)
 
     def extract_ctx(self, kafka_message):
         headers: Optional[List[Tuple[str, bytes]]] = kafka_message.headers()
@@ -161,11 +152,10 @@ class S3Service():
         headers_map = {k: v.decode('utf-8') for k, v in headers}
         return TraceContextTextMapPropagator().extract(headers_map)
 
-    # TODO: test
-    def inject_ctx(self, span, kafka_message):
+    def get_ctx_headers(self, span) -> List:
         headers = {}
-        TraceContextTextMapPropagator().inject(span.context, headers)
-        kafka_message.set_headers([(k, v.encode('utf-8')) for k, v in headers.items()])
+        TraceContextTextMapPropagator().inject(span.get_span_context(), headers)
+        return [(k, v.encode('utf-8')) for k, v in headers.items()]
 
     def process_message(self, message):
         ctx = self.extract_ctx(message)
@@ -190,14 +180,14 @@ class S3Service():
                     exc_msg = "Invalid message: missing required fields"
                     span.record_exception(Exception(exc_msg))
                     logger.error(exc_msg)
-                    self.write_to_kafka(execution_id, "error", error=exc_msg)
+                    self.write_to_kafka(execution_id, "error", span, error=exc_msg)
                     return
                 
                 if task.lower() not in ["download", "upload"]:
                     exc_msg = f"Unsupported task: {task}"
                     span.record_exception(Exception(exc_msg))
                     logger.error(exc_msg)
-                    self.write_to_kafka(execution_id, "error", error=exc_msg)
+                    self.write_to_kafka(execution_id, "error", span, error=exc_msg)
                     return
 
                 # Create S3 client
@@ -205,29 +195,26 @@ class S3Service():
 
                 # Perform operation
                 if task.lower() == "download":
-                    self.download_from_s3(execution_id, s3_client, bucket_name, s3_key, file_path)
+                    self.download_from_s3(execution_id, s3_client, bucket_name, s3_key, file_path, span)
                 elif task.lower() == "upload":
-                    self.upload_to_s3(execution_id, s3_client, bucket_name, s3_key, file_path)
-                    
-                # inject_ctx(span, message) when sending the message
+                    self.upload_to_s3(execution_id, s3_client, bucket_name, s3_key, file_path, span)
 
             except json.JSONDecodeError:
                 exc_msg = "Invalid message format: Not a valid JSON"
                 logger.error(exc_msg)
                 if execution_id:
-                    self.write_to_kafka(execution_id, "error", error="Invalid message format: Not a valid JSON")
+                    self.write_to_kafka(execution_id, "error", span, error="Invalid message format: Not a valid JSON")
             except Exception as e:
                 exc_msg = f"Error processing message: {e}"
                 logger.error(exc_msg)
                 if execution_id:
-                    self.write_to_kafka(execution_id, "error", error=exc_msg)
+                    self.write_to_kafka(execution_id, "error", span, error=exc_msg)
 
 
     def consume_kafka_messages(self):
         logger.info("Listening for messages...")
         try:
             while True:
-                # TODO: Single threaded
                 msg = self.consumer.poll(1.0)
 
                 if msg is None:
@@ -255,6 +242,6 @@ def healthz():
 
 if __name__ == "__main__":
     service = S3Service()
-    kafka_thread = threading.Thread(target=S3Service.consume_kafka_messages, daemon=True)
+    kafka_thread = threading.Thread(target=service.consume_kafka_messages, daemon=True)
     kafka_thread.start()
     app.run(host='0.0.0.0', port=80)
