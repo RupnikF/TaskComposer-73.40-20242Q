@@ -10,7 +10,7 @@ run-scheduler-pipeline:
     strategy: depend
   rules:
     - changes:
-        - scheduler/*
+        - scheduler/**/*
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 
@@ -21,7 +21,7 @@ run-workflow-manager-pipeline:
     strategy: depend
   rules:
     - changes:
-        - workflow-manager/*
+        - workflow-manager/**/*
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 run-echo-service-pipeline:
@@ -31,7 +31,7 @@ run-echo-service-pipeline:
     strategy: depend
   rules:
     - changes:
-        - echo-service/*
+        - echo-service/**/*
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 run-s3-service-pipeline:
@@ -41,7 +41,7 @@ run-s3-service-pipeline:
     strategy: depend
   rules:
     - changes:
-        - s3-service/*
+        - s3-service/**/*
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 run-ubuntu-service-pipeline:
@@ -51,7 +51,7 @@ run-ubuntu-service-pipeline:
     strategy: depend
   rules:
     - changes:
-        - ubuntu-service/*
+        - ubuntu-service/**/*
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 e2e-test:
