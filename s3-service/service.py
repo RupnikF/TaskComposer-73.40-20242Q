@@ -13,10 +13,16 @@ from opentelemetry.sdk.trace.export import (
 )
 from opentelemetry import trace
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
 
-provider = TracerProvider()
+provider = TracerProvider(resource=Resource.create({"service.name": "s3-service"}))
 processor = BatchSpanProcessor(ConsoleSpanExporter())
+processor_prod = BatchSpanProcessor(OTLPSpanExporter())
 provider.add_span_processor(processor)
+provider.add_span_processor(processor_prod)
+
+trace.set_tracer_provider(provider)
 
 tracer = trace.get_tracer("s3-service")
 
