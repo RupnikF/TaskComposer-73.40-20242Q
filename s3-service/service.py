@@ -86,7 +86,8 @@ class S3Service():
             consumer_config = {
                 "bootstrap.servers": KAFKA_BROKER,
                 "group.id": "s3service",
-                "auto.offset.reset": "earliest"
+                "auto.offset.reset": "earliest",
+                "enable.auto.commit": False
             }
             self.consumer = Consumer(consumer_config)
         else:
@@ -241,6 +242,7 @@ class S3Service():
                 # Process the message
                 logger.info(f"Received message: {msg.value().decode('utf-8')}")
                 self.process_message(msg)
+                self.consumer.commit(message=msg)
 
         except KeyboardInterrupt:
             logger.info("Stopping Kafka consumer...")
