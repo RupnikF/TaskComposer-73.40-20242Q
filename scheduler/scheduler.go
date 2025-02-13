@@ -183,19 +183,20 @@ func main() {
 			return
 		}
 		err := jobsRepository.CancelJob(stringUUID)
-		JobMessage := " And Job not found"
+		JobMessage := "Job not found"
 		if err == nil {
-			JobMessage = " And Job cancelled"
+			JobMessage = "Job cancelled"
 		}
+		log.Printf("%s, %s", stringUUID, JobMessage)
 		if execution.State.Status != repository.PENDING && execution.State.Status != repository.EXECUTING {
 			c.JSON(200, gin.H{
-				"error": "execution already finished" + JobMessage,
+				"error": "execution already finished",
 			})
 			return
 		}
 		executionRepository.CancelExecution(c, execution)
 		c.JSON(200, gin.H{
-			"message": "execution cancelled" + JobMessage,
+			"message": "execution cancelled",
 		})
 	})
 	r.POST("/cancel-execution", func(c *gin.Context) {
