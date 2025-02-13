@@ -29,20 +29,9 @@ variables:
   TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: "unix:///var/run/docker.sock"
 
 stages:
-  - install
   - build
   - test
-  - package
   - release
-  - deploy
-
-
-install-dependencies:
-  stage: install
-  script:
-  - echo "Install dependencies"
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 
 build-images:
   stage: build
@@ -115,17 +104,6 @@ functional-test:
   - job: component-test
   - job: build-images
     artifacts: true
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
-
-package:
-  stage: package
-  script:
-  - echo "Packaging"
-  needs:
-  - job: build-images
-    artifacts: true
-  - job: functional-test
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 

@@ -1,6 +1,5 @@
 stages:
 - pipeline
-- test
 - deploy
 
 run-scheduler-pipeline:
@@ -54,17 +53,6 @@ run-ubuntu-service-pipeline:
         - ubuntu-service/**/*
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
-e2e-test:
-  stage: test
-  script:
-  - echo "E2E test"
-  needs:
-  - job: run-scheduler-pipeline
-  - job: run-workflow-manager-pipeline
-  - job: run-echo-service-pipeline
-  - job: run-s3-service-pipeline
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 deploy-to-aws:
   stage: deploy
