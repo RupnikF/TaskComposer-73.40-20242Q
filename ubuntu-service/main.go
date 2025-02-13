@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 	"ubuntu-service/service"
 
 	"github.com/joho/godotenv"
@@ -186,9 +187,10 @@ func main() {
 
 	brokers := []string{os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")}
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers: brokers,
-		GroupID: "native",
-		Topic:   os.Getenv("INPUT_TOPIC"),
+		Brokers:        brokers,
+		GroupID:        "native",
+		Topic:          os.Getenv("INPUT_TOPIC"),
+		CommitInterval: time.Second,
 	})
 
 	writer := kafka.NewWriter(kafka.WriterConfig{
@@ -200,7 +202,7 @@ func main() {
 	log.Print("Listening on topic: " + os.Getenv("INPUT_TOPIC"))
 	go func() {
 		for {
-			msg, err := reader.ReadMessage(context.Background())
+			msg, err := reader.FetchMessage(context.Background())
 			if err != nil {
 				logger.Error("Error reading message:", slog.Any("err", err))
 			} else {
@@ -213,49 +215,56 @@ func main() {
 					span.End()
 					continue
 				}
-				span.SetAttributes(attribute.String("task.name", request.TaskName))
-				logger.Debug("Received message: %s", slog.Any("msg", string(msg.Value)))
-				var kafkaResponse Response
-				switch request.TaskName {
-				case "bash":
-					res, err := service.RunShell(request.Inputs, span)
-					if err != nil {
-						span.RecordError(err)
-						kafkaResponse = request.ToError(err.Error())
-					} else {
-						kafkaResponse = request.ToResponse(map[string]interface{}{
-							"stdout": res.Stdout,
-							"stderr": res.Stderr,
-						})
+				go func() {
+					defer span.End()
+					defer func(reader *kafka.Reader, ctx context.Context, msg kafka.Message) {
+						err := reader.CommitMessages(ctx, msg)
+						if err != nil {
+							span.RecordError(err)
+						}
+					}(reader, context.Background(), msg)
+					
+					span.SetAttributes(attribute.String("task.name", request.TaskName))
+					logger.Debug("Received message: %s", slog.Any("msg", string(msg.Value)))
+					var kafkaResponse Response
+					switch request.TaskName {
+					case "bash":
+						res, err := service.RunShell(request.Inputs, span)
+						if err != nil {
+							span.RecordError(err)
+							kafkaResponse = request.ToError(err.Error())
+						} else {
+							kafkaResponse = request.ToResponse(map[string]interface{}{
+								"stdout": res.Stdout,
+								"stderr": res.Stderr,
+							})
+						}
+					case "eval":
+						res, err := service.Eval(request.Inputs, span)
+						if err != nil {
+							span.RecordError(err)
+							kafkaResponse = request.ToError(err.Error())
+						} else {
+							kafkaResponse = request.ToResponse(map[string]interface{}{
+								"result": res,
+							})
+						}
+					default:
+						span.RecordError(fmt.Errorf("unknown task name: %s", request.TaskName))
+						kafkaResponse = request.ToError("Invalid task")
 					}
-				case "eval":
-					res, err := service.Eval(request.Inputs, span)
-					if err != nil {
-						span.RecordError(err)
-						kafkaResponse = request.ToError(err.Error())
-					} else {
-						kafkaResponse = request.ToResponse(map[string]interface{}{
-							"result": res,
-						})
-					}
-				default:
-					span.RecordError(fmt.Errorf("unknown task name: %s", request.TaskName))
-					kafkaResponse = request.ToError("Invalid task")
-				}
 
-				finalMsg, err := json.Marshal(kafkaResponse)
-				if err != nil {
-					logger.Error("Error marshaling final response", slog.Any("err", err))
-					span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
-					span.End()
-					continue
-				}
-				logger.Info("Sending response:", slog.Any("response", string(finalMsg)))
-				err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg, Headers: PassHeader(ctx)})
-				if err != nil {
-					logger.Error("Error writing final response", slog.Any("err", err))
-				}
-				span.End()
+					finalMsg, err := json.Marshal(kafkaResponse)
+					if err != nil {
+						logger.Error("Error marshaling final response", slog.Any("err", err))
+						span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
+					}
+					logger.Info("Sending response:", slog.Any("response", string(finalMsg)))
+					err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg, Headers: PassHeader(ctx)})
+					if err != nil {
+						logger.Error("Error writing final response", slog.Any("err", err))
+					}
+				}()
 			}
 		}
 	}()

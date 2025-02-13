@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -25,10 +26,12 @@ func GetStepReader() *kafka.Reader {
 
 func GetReader(bootstrapServers []string, topic string, groupid string) *kafka.Reader {
 	return kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  bootstrapServers,
-		GroupID:  groupid,
-		Topic:    topic,
-		MaxBytes: 10e6,
+		Brokers:        bootstrapServers,
+		GroupID:        groupid,
+		Topic:          topic,
+		MaxBytes:       10e6,
+		CommitInterval: time.Second, // flushes commits to Kafka every second
+		//offset
 	})
 }
 

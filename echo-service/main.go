@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -168,9 +169,10 @@ func main() {
 
 	brokers := []string{os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")}
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers: brokers,
-		GroupID: "native",
-		Topic:   os.Getenv("INPUT_TOPIC"),
+		Brokers:        brokers,
+		GroupID:        "native",
+		Topic:          os.Getenv("INPUT_TOPIC"),
+		CommitInterval: time.Second,
 	})
 
 	writer := kafka.NewWriter(kafka.WriterConfig{
@@ -182,7 +184,7 @@ func main() {
 	log.Print("Listening on topic: " + os.Getenv("INPUT_TOPIC"))
 	go func() {
 		for {
-			msg, err := reader.ReadMessage(context.Background())
+			msg, err := reader.FetchMessage(context.Background())
 			if err != nil {
 				logger.Error("Error reading message:", err)
 			} else {
@@ -193,67 +195,70 @@ func main() {
 					continue
 				}
 				ctx, span := CreateOrGetSpan("echo-service", msg.Headers)
-				if request.TaskName == "echo" {
-					span.SetAttributes(attribute.String("task.name", request.TaskName))
-					logger.Debug("Received message: %s", string(msg.Value))
-					requestMessage, ok := request.Inputs["msg"]
-					var echoResponse EchoResponse
-					if !ok {
-						span.RecordError(fmt.Errorf("property msg not found in echo request"))
-						echoResponse = EchoResponse{
+				go func() {
+					defer span.End() // Close span
+					defer func() {
+						err := reader.CommitMessages(context.Background(), msg)
+						logger.Error("Error committing message:", err)
+					}() // Commit message
+					if request.TaskName == "echo" {
+						span.SetAttributes(attribute.String("task.name", request.TaskName))
+						logger.Debug("Received message: %s", string(msg.Value))
+						requestMessage, ok := request.Inputs["msg"]
+						var echoResponse EchoResponse
+						if !ok {
+							span.RecordError(fmt.Errorf("property msg not found in echo request"))
+							echoResponse = EchoResponse{
+								ExecutionId: request.ExecutionId,
+								Outputs: map[string]interface{}{
+									"error": map[string]string{
+										"msg": "No msg property in inputs",
+									},
+								},
+							}
+						} else {
+							span.SetAttributes(attribute.String("task.response", (requestMessage.(string))))
+							echoResponse = EchoResponse{
+								ExecutionId: request.ExecutionId,
+								Outputs: map[string]interface{}{
+									"msg": requestMessage,
+								},
+							}
+						}
+
+						finalMsg, err := json.Marshal(echoResponse)
+						if err != nil {
+							logger.Error("Error marshaling final response: %v", err)
+							span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
+							return
+						}
+						logger.Info("Sending response: %s", string(finalMsg))
+						err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg, Headers: PassHeader(ctx)})
+						if err != nil {
+							logger.Error("Error writing final response: %v", err)
+						}
+					} else {
+						span.RecordError(fmt.Errorf("unknown task name: %s", request.TaskName))
+						finalMsg, err := json.Marshal(EchoResponse{
 							ExecutionId: request.ExecutionId,
 							Outputs: map[string]interface{}{
 								"error": map[string]string{
-									"msg": "No msg property in inputs",
+									"msg": "Invalid task",
 								},
 							},
+						})
+						if err != nil {
+							span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
+							logger.Error("Error marshaling final response: %v", err)
+							return
 						}
-					} else {
-						span.SetAttributes(attribute.String("task.response", (requestMessage.(string))))
-						echoResponse = EchoResponse{
-							ExecutionId: request.ExecutionId,
-							Outputs: map[string]interface{}{
-								"msg": requestMessage,
-							},
+						err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg, Headers: PassHeader(ctx)})
+						if err != nil {
+							logger.Error("Error writing final response: %v", err)
+							span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
 						}
 					}
-
-					finalMsg, err := json.Marshal(echoResponse)
-					if err != nil {
-						logger.Error("Error marshaling final response: %v", err)
-						span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
-						span.End()
-						continue
-					}
-					logger.Info("Sending response: %s", string(finalMsg))
-					err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg, Headers: PassHeader(ctx)})
-					if err != nil {
-						logger.Error("Error writing final response: %v", err)
-					}
-					span.End()
-				} else {
-					span.RecordError(fmt.Errorf("unknown task name: %s", request.TaskName))
-					finalMsg, err := json.Marshal(EchoResponse{
-						ExecutionId: request.ExecutionId,
-						Outputs: map[string]interface{}{
-							"error": map[string]string{
-								"msg": "Invalid task",
-							},
-						},
-					})
-					if err != nil {
-						span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
-						logger.Error("Error marshaling final response: %v", err)
-						span.End()
-						continue
-					}
-					err = writer.WriteMessages(context.Background(), kafka.Message{Value: finalMsg, Headers: PassHeader(ctx)})
-					if err != nil {
-						logger.Error("Error writing final response: %v", err)
-						span.RecordError(fmt.Errorf("error marshaling final response: %v", err))
-					}
-					span.End()
-				}
+				}()
 			}
 		}
 	}()

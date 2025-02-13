@@ -3,6 +3,7 @@ package broker
 import (
 	"context"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"log/slog"
 	"time"
 
 	"github.com/segmentio/kafka-go"
@@ -43,21 +44,19 @@ var consumerLogger = otelslog.NewLogger("kafka-consumer")
 func ConsumeMessageWithHandler(c *kafka.Reader, timeout time.Duration, handler func([]byte, []kafka.Header)) {
 
 	// A signal handler or similar could be used to set this to false to break the loop.
-	run := true
-
-	for run {
-		msg, err := c.ReadMessage(context.Background())
+	for {
+		msg, err := c.FetchMessage(context.Background())
 		if err == nil {
-			go handler(msg.Value, msg.Headers)
+			go func() {
+				handler(msg.Value, msg.Headers)
+				err := c.CommitMessages(context.Background(), msg)
+				consumerLogger.Error("Error commiting message", slog.Any("err", err))
+			}()
 		} else {
 			// The client will automatically try to recover from all errors.
 			// Timeout is not considered an error because it is raised by
 			// ReadMessage in absence of messages.
 			consumerLogger.Warn("Consumer error", "error", err, "message", msg)
 		}
-	}
-	err := c.Close()
-	if err != nil {
-		consumerLogger.Error("Failed to close consumer", "error", err)
 	}
 }
