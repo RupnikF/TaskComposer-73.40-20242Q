@@ -1,0 +1,199 @@
+@baseScheduler=http://localhost:8080
+@baseWorkflowManager=http://localhost:8081
+
+###
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
+
+name: "IFTEST"
+args:
+  - property1:
+      default: "value"
+  - property2:
+      default: "value"
+steps:
+  - echo1:
+      service: "echo_service" # (default)
+      task: "echo"
+      input:
+        msg: "$args.property1"
+  - check-property:
+      service: 'native'
+      task: "if"
+      input:
+        leftValue: "echo1.msg"
+        rightValue: "$args.property2"
+        operator: "=="
+        onTrue: "echo2"
+        onFalse: "continue"
+  - premature:
+      service: "native"
+      task: "abort"
+  - echo2:
+      service: "echo_service"
+      task: "echo"
+      input:
+        msg: "check-property.result"
+
+###
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
+
+name: "S3_TEST_D"
+args:
+  - file_path:
+      default: ""
+  - bucket:
+      default: ""
+  - s3_key:
+      default: ""
+  - aws_access_key:
+      default: ""
+  - aws_secret_key:
+      default: ""
+  - aws_session_token:
+      default: ""
+steps:
+  - s3_download:
+      service: "s3_service"
+      task: "download"
+      input:
+        file_path: "$args.file_path"
+        bucket_name: "$args.bucket"
+        s3_key: "$args.s3_key"
+        aws_access_key: "$args.aws_access_key"
+        aws_secret_key: "$args.aws_secret_key"
+        aws_region: "us-east-1"
+        aws_session_token: "$args.aws_session_token"
+
+###
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
+
+name: "S3_TEST_U"
+args:
+  - file_path:
+      default: ""
+  - bucket:
+      default: ""
+  - s3_key:
+      default: ""
+  - aws_access_key:
+      default: ""
+  - aws_secret_key:
+      default: ""
+  - aws_session_token:
+      default: ""
+steps:
+  - s3_download:
+      service: "s3_service"
+      task: "upload"
+      input:
+        file_path: "$args.file_path"
+        bucket_name: "$args.bucket"
+        s3_key: "$args.s3_key"
+        aws_access_key: "$args.aws_access_key"
+        aws_secret_key: "$args.aws_secret_key"
+        aws_region: "us-east-1"
+        aws_session_token: "$args.aws_session_token"
+
+###
+GET {{baseWorkflowManager}}/workflows
+
+###
+DELETE {{baseWorkflowManager}}/workflows/5
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+  "workflowName": "IFTEST",
+  "tags": ["hola","chau"],
+  "parameters": {
+    "cronDefinition": "* * * * * *",
+    "delayed": "30"
+  },
+  "args": {
+    "property1": "asd",
+    "property2": "chau"
+  }
+}
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+  "workflowName": "IFTEST",
+  "tags": [],
+  "parameters": {},
+  "args": {
+    "property1": "hola",
+    "property2": "chau"
+  }
+}
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+  "workflowName": "S3_TEST_D",
+  "tags": [],
+  "parameters": {},
+  "args": {
+    "file_path": "prueba2.mp4",
+    "bucket": "lechugabucket",
+    "s3_key": "sds_tp2_s5_a.mp4",
+    "aws_access_key": "ASIAU5FRU7CCYHJXSJHV",
+    "aws_secret_key": "0+rb2n60/+98Cc06XZiRM2gFfBJyk5tvGuT/QWgh",
+    "aws_session_token": "IQoJb3JpZ2luX2VjEHEaCXVzLXdlc3QtMiJHMEUCIENh3Mpr984XNImtmCuQLQ8fDNRJ2SnetFFCAir9VuYRAiEAsrzdTJ7lROpqFnugEfbydcei47wlF/D73OzeP5Eh4+4qtgIIiv//////////ARABGgwzMzc1Mjc1MDI5ODEiDHNhJCu8ySOo0X6GQSqKAto3feqbyvL+2cBHWv0iyL+rmNBt1DXer9GzdGHaay7IMVagdjbL0x7lmGJz1TgKUwvyuZYwSSVM5+5uTeGoo/rHTvKmx/bUjL7bymsC5ZiI0OCj5EYf7kqIGe2hA4vrgVMxuePTuJOw3nNJutu5hfeJTty8PhKhP3pZrPJMhZeJ/T/Txpfe+GsV2RSFBbXyx28JW0ltWCQPT0o0/3Hn/wNnEAUXjlgrJghbQaki9ubR7HOUemlfeOw7mV6d/UUnzVGp8tW9D1AjNMX8SbvsTcpgqAZ5CKQpmXWDmIdn+mXOg63UmNb17VkvkehVBLmTK6EVB+JqlGdAKOCwH1VVumP8zxDP01LYc8OHMOG5nL0GOp0BUKm2uFDGJPOVIKbxFGxdQ9ffpzzBVDpktwX9YxN2VKjNIEMmlOgRB/oV8JYM/kbW6Q5VZGLkxwsagHvJ/ws4GU3tm0Zo4DtbEqSPLaSP+MHTmMvb+3EpzPJNNXd5g3Fc3So5pMRZYA2aM8ljQsLkXkytT02ddwQaKEqvYJCbF6U942mCwhvD1S0W0xnpNRyumDi0mur1/gF0u/cWkQ=="
+  }
+}
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+  "workflowName": "S3_TEST_U",
+  "tags": [],
+  "parameters": {},
+  "args": {
+    "file_path": "prueba3.mp4",
+    "bucket": "lechugabucket",
+    "s3_key": "prueba.mp4",
+    "aws_access_key": "ASIAU5FRU7CCYHJXSJHV",
+    "aws_secret_key": "0+rb2n60/+98Cc06XZiRM2gFfBJyk5tvGuT/QWgh",
+    "aws_session_token": "IQoJb3JpZ2luX2VjEHEaCXVzLXdlc3QtMiJHMEUCIENh3Mpr984XNImtmCuQLQ8fDNRJ2SnetFFCAir9VuYRAiEAsrzdTJ7lROpqFnugEfbydcei47wlF/D73OzeP5Eh4+4qtgIIiv//////////ARABGgwzMzc1Mjc1MDI5ODEiDHNhJCu8ySOo0X6GQSqKAto3feqbyvL+2cBHWv0iyL+rmNBt1DXer9GzdGHaay7IMVagdjbL0x7lmGJz1TgKUwvyuZYwSSVM5+5uTeGoo/rHTvKmx/bUjL7bymsC5ZiI0OCj5EYf7kqIGe2hA4vrgVMxuePTuJOw3nNJutu5hfeJTty8PhKhP3pZrPJMhZeJ/T/Txpfe+GsV2RSFBbXyx28JW0ltWCQPT0o0/3Hn/wNnEAUXjlgrJghbQaki9ubR7HOUemlfeOw7mV6d/UUnzVGp8tW9D1AjNMX8SbvsTcpgqAZ5CKQpmXWDmIdn+mXOg63UmNb17VkvkehVBLmTK6EVB+JqlGdAKOCwH1VVumP8zxDP01LYc8OHMOG5nL0GOp0BUKm2uFDGJPOVIKbxFGxdQ9ffpzzBVDpktwX9YxN2VKjNIEMmlOgRB/oV8JYM/kbW6Q5VZGLkxwsagHvJ/ws4GU3tm0Zo4DtbEqSPLaSP+MHTmMvb+3EpzPJNNXd5g3Fc3So5pMRZYA2aM8ljQsLkXkytT02ddwQaKEqvYJCbF6U942mCwhvD1S0W0xnpNRyumDi0mur1/gF0u/cWkQ=="
+  }
+}
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+  "workflowName": "Ubuntu list commands",
+  "tags": [],
+  "parameters": {}
+}
+
+###
+
+GET http://localhost:8080/healthcheck
+
+###
+GET {{baseScheduler}}/executions/c3a47e55-6f66-4422-b9b8-f014d31118e4
+
+###
+POST {{baseScheduler}}/cancel-execution/da0f328e-3915-49b2-a416-0865427a649c
+
+###
+POST {{baseScheduler}}/cancel-execution/
+Content-Type: application/json
+
+{
+  "tags": ["hola","chau"]
+}

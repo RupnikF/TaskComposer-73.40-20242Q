@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "scheduler.fullname" . }}
+  labels:
+    {{- include "scheduler.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "scheduler.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "scheduler.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "scheduler.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: "POSTGRES_USER"
+              valueFrom:
+                secretKeyRef:
+                  key: scheduler_db_user
+                  name: {{ .Release.Name }}-db-auth
+            - name: "POSTGRES_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  key: scheduler_db_pass
+                  name: {{ .Release.Name }}-db-auth
+            - name: "POSTGRES_DB"
+              valueFrom:
+                secretKeyRef:
+                  key: scheduler_db_db
+                  name: {{ .Release.Name }}-db-auth
+            - name: "POSTGRES_HOST"
+              value: {{ .Values.scheduler_db_host }}
+            - name: "KAFKA_HOST"
+              value: {{ .Values.kafka_host }}
+            - name: "KAFKA_PORT"
+              value: {{ .Values.kafka_port | quote }}
+            - name: "ENV_MODE"
+              value: "production"
+            - name: "SUBMISSIONS_TOPIC"
+              value: {{ .Values.submissions_topic }}
+            - name: "STEPS_TOPIC"
+              value: {{ .Values.steps_topic }}
+            - name: "SERVICE_NAME"
+              value: "scheduler"
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT"
+              value: "logging-signoz-otel-collector.default.svc.cluster.local:4318"
+            - name: "OTEL_EXPORTER_OTLP_ENDPOINT_GRPC"
+              value: "logging-signoz-otel-collector.default.svc.cluster.local:4317"
+            - name: "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT"
+              value: "http://logging-signoz-otel-collector.default.svc.cluster.local:4318/v1/logs"
+            - name: "SERVICES_FILE_PATH"
+              value: {{ .Values.services_file_path }}
+            - name: "ETCD_HOST"
+              value: {{ .Values.etcd_host }}
+            - name: "ETCD_PORT"
+              value: {{ .Values.etcd_port | quote }}
+            - name: "ETCD_USERNAME"
+              value: {{ .Values.etcd_user | quote }}
+            - name: "ETCD_PASSWORD"
+              value: {{ .Values.etcd_pass | quote }}
+
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

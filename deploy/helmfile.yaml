@@ -1,0 +1,264 @@
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+  - name: traefik
+    url: https://traefik.github.io/charts
+  - name: signoz
+    url: https://charts.signoz.io
+#  - name: ingress-nginx
+#    url: https://kubernetes.github.io/ingress-nginx
+
+releases:
+  # Scheduler
+  - name: sch-db
+    namespace: scheduler
+    chart: bitnami/postgresql
+    version: 16.2.2
+    values:
+      - auth:
+          database: {{ requiredEnv "SCHEDULER_POSTGRES_DB" }}
+          username: {{ requiredEnv "SCHEDULER_POSTGRES_USER" }}
+          password: {{ requiredEnv "SCHEDULER_POSTGRES_PASSWORD" }}
+      - persistence:
+          primary:
+            size: "2Gi"
+      - replication:
+          enabled: true
+          readReplicas: 1
+      - metrics:
+          enabled: false # No se si queremos esto
+      - global:
+          defaultStorageClass: "local-path"
+  - name: scheduler-broker
+    namespace: scheduler
+    chart: bitnami/kafka
+    version: 31.0.0
+    values:
+      - kraft:
+          clusterId: "1"
+      - broker:
+          replicaCount: 2  # Increased for HA
+      - controller:
+          replicaCount: 2  # Increased for HA
+          controllerOnly: false
+      - global:
+          defaultStorageClass: "local-path"
+      - controller:
+          persistence:
+            size: 2Gi
+      - broker:
+          persistence:
+            size: 2Gi
+      - listeners:
+          client:
+            containerPort: 9092
+            protocol: PLAINTEXT
+            name: BROKER
+          controller:
+            containerPort: 9093
+            protocol: PLAINTEXT
+            name: CONTROLLER
+      - provisioning:
+          numPartitions: 3
+          replicationFactor: 3  # Increased for HA
+      - extraEnvVars:
+          - name: KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE
+            value: "true"
+          - name: BITNAMI_DEBUG
+            value: "true"
+          - name: ALLOW_PLAINTEXT_LISTENER
+            value: "yes"
+  - name: scheduler
+    namespace: scheduler
+    chart: ./scheduler
+    values:
+      - image:
+          tag: "dev"
+      - replicaCount: 2
+      - scheduler_db_host: "sch-db-postgresql"
+      - scheduler_db_user: {{ requiredEnv "SCHEDULER_POSTGRES_USER" }}
+      - scheduler_db_pass: {{ requiredEnv "SCHEDULER_POSTGRES_PASSWORD" }}
+      - scheduler_db_db: {{ requiredEnv "SCHEDULER_POSTGRES_DB" }}
+      - kafka_host: "scheduler-broker-kafka"
+      - kafka_port: "9092"
+      - submission_kafka_topic: "execution_submissions"
+      - steps_kafka_topic: "execution_steps"
+      - submissions_topic: "execution_submissions"
+      - steps_topic: "execution_steps"
+      - services_file_path: "/data/services.json"
+      - etcd_host: "sch-sync-etcd"
+      - etcd_port: "2379"
+      - etcd_user: {{ requiredEnv "ETCD_USER" }}
+      - etcd_pass: {{ requiredEnv "ETCD_PASSWORD" }}
+  - name: sch-sync
+    namespace: scheduler
+    chart: bitnami/etcd
+    version: 10.7.1
+    values:
+      - auth:
+          rbac:
+            create: true
+            allowNoneAuthentication: true
+            rootPassword: {{ requiredEnv "ETCD_PASSWORD" }}
+      - persistence:
+          size: "2Gi"
+          storageClass: "local-path"
+      - global:
+          defaultStorageClass: "local-path"
+      - replicaCount: 2
+  # Workflow Manager
+  - name: wf-db
+    namespace: workflow-manager
+    chart: bitnami/postgresql
+    version: 16.2.2
+    values:
+      - auth:
+          database: {{ requiredEnv "WORKFLOWS_POSTGRES_DB" }}
+          username: {{ requiredEnv "WORKFLOWS_POSTGRES_USER" }}
+          password: {{ requiredEnv "WORKFLOWS_POSTGRES_PASSWORD" }}
+      - persistence:
+          primary:
+            size: "2Gi"
+      - replication:
+          enabled: true
+          readReplicas: 1
+      - metrics:
+          enabled: false # No se si queremos esto
+      - global:
+          defaultStorageClass: "local-path"
+  - name: workflow-manager
+    namespace: workflow-manager
+    chart: ./workflow-manager
+    values:
+      - image:
+          tag: "dev"
+      - replicaCount: 2
+      - workflows_db_host: "wf-db-postgresql"
+      - workflows_db_user: {{ requiredEnv "WORKFLOWS_POSTGRES_USER" }}
+      - workflows_db_pass: {{ requiredEnv "WORKFLOWS_POSTGRES_PASSWORD" }}
+      - workflows_db_db: {{ requiredEnv "WORKFLOWS_POSTGRES_DB" }}
+      - submission_kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
+      - submission_kafka_topic: "execution_submissions"
+  # echo-service
+  - name: echo-service
+    namespace: echo-service
+    chart: ./echo-service
+    values:
+      - image:
+          tag: "dev"
+      - replicaCount: 2
+      - kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
+      - kafka_port: "9092"
+      - input_topic: "echo_service_input"
+      - output_topic: "echo_service_output"
+      - pvc:
+          name: "echo-service-pv"
+          accessMode: "ReadWriteMany"
+          size: "2Gi"
+          label: "echo-pv"
+      - volumes:
+          - name: "echo-service-pv"
+            persistentVolumeClaim:
+              claimName: "echo-service-pv"
+      - volumeMounts:
+          - name: "echo-service-pv"
+            mountPath: "/data"
+            readOnly: false
+  # s3-service
+  - name: s3-service
+    namespace: s3-service
+    chart: ./s3-service
+    values:
+      - image:
+          tag: "dev"
+      - replicaCount: 2
+      - kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
+      - kafka_port: "9092"
+      - input_topic: "s3_service_input"
+      - output_topic: "s3_service_output"
+      - pvc:
+          name: "s3-service-pv"
+          accessMode: "ReadWriteMany"
+          size: "2Gi"
+          label: "s3-pv"
+      - volumes:
+          - name: "s3-service-pv"
+            persistentVolumeClaim:
+              claimName: "s3-service-pv"
+      - volumeMounts:
+          - name: "s3-service-pv"
+            mountPath: "/data"
+            readOnly: false
+  # ubuntu-service
+  - name: ubuntu-service
+    namespace: ubuntu-service
+    chart: ./ubuntu-service
+    values:
+      - image:
+          tag: "dev"
+      - replicaCount: 2
+      - kafka_host: "scheduler-broker-kafka.scheduler.svc.cluster.local"
+      - kafka_port: "9092"
+      - input_topic: "ubuntu_service_input"
+      - output_topic: "ubuntu_service_output"
+      - pvc:
+          name: "ubuntu-service-pv"
+          accessMode: "ReadWriteMany"
+          size: "2Gi"
+          label: "ubuntu-pv"
+      - volumes:
+          - name: "ubuntu-service-pv"
+            persistentVolumeClaim:
+              claimName: "ubuntu-service-pv"
+      - volumeMounts:
+          - name: "ubuntu-service-pv"
+            mountPath: "/data"
+            readOnly: false
+  - name: traefik
+    namespace: default
+    chart: traefik/traefik
+    values:
+      - traefik.yaml
+#  - name: grpc-ingress
+#    namespace: default
+#    chart: ingress-nginx/ingress-nginx
+#    values:
+#      - controller:
+#          service:
+#            type: NodePort
+#            nodePorts:
+#              http: 31080
+#              https: 31443
+  - name: shared-nfs
+    namespace: default
+    chart: ./nfs-pv
+    values:
+      - names:
+          - "echo-pv"
+          - "s3-pv"
+          - "ubuntu-pv"
+      - storage: "2Gi"
+      - accessMode: "ReadWriteMany"
+      - nfsServer: {{ requiredEnv "NFS_SERVER" }}
+      - nfsPath: "/mnt/nfs"
+      
+  - name: logging
+    namespace: default
+    chart: signoz/signoz
+    values:
+      - installCRDs: true
+      - global:
+          storageClass: "local-path"
+      - clickhouse:
+          persistence:
+            size: 2Gi
+
+  - name: logging-ingress
+    namespace: default
+    chart: ./signoz-ingress
+  - name: local-storage-provisioner
+    namespace: local-path-storage
+    chart: ./local-path-provisioner
+    values:
+      - storageClass:
+          name: "local-path"

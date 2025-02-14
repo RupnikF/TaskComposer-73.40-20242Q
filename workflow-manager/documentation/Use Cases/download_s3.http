@@ -1,0 +1,59 @@
+@baseScheduler=http://ec2-54-242-198-135.compute-1.amazonaws.com:32080
+@baseWorkflowManager=http://ec2-54-242-198-135.compute-1.amazonaws.com:32080
+
+###
+GET {{baseWorkflowManager}}/workflows
+
+###
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
+
+name: "S3_DOWNLOAD"
+args:
+  - file_path:
+      default: ""
+  - bucket:
+      default: ""
+  - s3_key:
+      default: ""
+  - aws_access_key:
+      default: ""
+  - aws_secret_key:
+      default: ""
+  - aws_session_token:
+      default: ""
+steps:
+  - s3_download:
+      service: "s3_service"
+      task: "download"
+      input:
+        file_path: "$args.file_path"
+        bucket_name: "$args.bucket"
+        s3_key: "$args.s3_key"
+        aws_access_key: "$args.aws_access_key"
+        aws_secret_key: "$args.aws_secret_key"
+        aws_region: "us-east-1"
+        aws_session_token: "$args.aws_session_token"
+
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+    "workflowName": "S3_DOWNLOAD",
+    "tags": [],
+    "parameters": {},
+    "args": {
+        "file_path":"s3_downloaded_file.txt",
+        "bucket":"",
+        "s3_key":"",
+        "aws_access_key":"",
+        "aws_secret_key":"",
+        "aws_session_token":""
+    }
+}
+
+
+###
+GET {{baseScheduler}}/executions/b00e8bd8-2384-4b2e-a692-49ff476b9565

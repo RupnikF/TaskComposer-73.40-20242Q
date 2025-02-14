@@ -4,45 +4,58 @@ spec:
       type: string
     directory-name:
       type: string
+    environment:
+      type: string
+    test-image:
+        type: string
 
 ---
 
 image: "docker:latest"
 
+services:
+  - name: docker:dind
+    #Disable TLS to avoid docker startup interruption
+    command: ["--tls=false"]
+
 variables:
   DOCKER_BUILDKIT: 1
   IMAGE_BASE: "$CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME"
+  #For TestContainers withouth TLS
+  DOCKER_HOST: "tcp://docker:2375"
+  DOCKER_TLS_CERTDIR: ""
+  #Better Performance
+  DOCKER_DRIVER: overlay2
+  TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: "unix:///var/run/docker.sock"
 
 stages:
-  - install
   - build
   - test
-  - package
   - release
-  - deploy
-
-
-install-dependencies:
-  stage: install
-  script:
-  - echo "Install dependencies"
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 
 build-images:
   stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [ "" ]
   script:
-  - echo "Building images"
-  needs:
-  - job: install-dependencies
-    artifacts: true
+    - cp ${CI_PROJECT_DIR}/services.json ${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]
+    - /kaniko/executor
+      --dockerfile "${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]/Dockerfile"
+      --context "${CI_PROJECT_DIR}/$[[ inputs.directory-name ]]"
+      --destination "${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
+      --destination "${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$CI_COMMIT_SHORT_SHA"
+      # se pushea tanto el tag de la rama como el tag del commit
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 
 unit-test:
   stage: test
+  image: $[[ inputs.test-image ]]
   script:
-  - echo "Unit test"
+  - cd $[[ inputs.directory-name ]]/scripts/unit
+  - chmod +x run.sh
+  - sh run.sh
   needs:
   - job: build-images
     artifacts: true
@@ -51,8 +64,11 @@ unit-test:
 
 integration-test:
   stage: test
+  image: $[[ inputs.test-image ]]
   script:
-  - echo "Integration test"
+  - cd $[[ inputs.directory-name ]]/scripts/integration
+  - chmod +x run.sh
+  - sh run.sh
   needs:
   - job: unit-test
   - job: build-images
@@ -62,8 +78,11 @@ integration-test:
 
 component-test:
   stage: test
+  image: $[[ inputs.test-image ]]
   script:
-  - echo "Component test"
+  - cd $[[ inputs.directory-name ]]/scripts/component
+  - chmod +x run.sh
+  - sh run.sh
   needs:
   - job: integration-test
   - job: build-images
@@ -73,8 +92,11 @@ component-test:
 
 functional-test:
   stage: test
+  image: $[[ inputs.test-image ]]
   script:
-  - echo "Functional test"
+  - cd $[[ inputs.directory-name ]]/scripts/functional
+  - chmod +x run.sh
+  - sh run.sh
   needs:
   - job: component-test
   - job: build-images
@@ -82,33 +104,23 @@ functional-test:
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 
-package:
-  stage: package
-  script:
-  - echo "Packaging"
-  needs:
-  - job: build-images
-    artifacts: true
-  - job: functional-test
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
-
 deliver-to-registry:
   stage: release
   script:
-  - echo "Deliver to registry"
+    # Pulleamos la imagen para que no se haga el build de nuevo
+    - export IMAGE_TO_PULL="${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
+    - echo "${CI_PASSWORD}" | docker login -u "${CI_USERNAME}" --password-stdin $CI_REGISTRY
+    - docker pull "$IMAGE_TO_PULL"
+    # Ponemos las credenciales de Dockerhub
+    - echo "${DOCKER_HUB_PASSWORD}" | docker login -u "${DOCKER_HUB_USERNAME}" --password-stdin
+    - export DOCKERHUB_IMAGE="${DOCKER_HUB_USER}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
+    # Re-tag the image for Docker Hub
+    - docker tag "$IMAGE_TO_PULL" "$DOCKERHUB_IMAGE"
+    # Push the image to Docker Hub using Kaniko
+    - docker push "$DOCKERHUB_IMAGE"
   needs:
-  - job: package
-    artifacts: true
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
-
-deploy-chart:
-  stage: deploy
-  script:
-  - echo "Deploy chart to environment"
-  needs:
-  - job: deliver-to-registry
+  - job: functional-test
+  - job: build-images
     artifacts: true
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline"

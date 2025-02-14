@@ -1,0 +1,7 @@
+include:
+  - local: 'gitlab-ci-template.yml'
+    inputs:
+      microservice-name: 'echo-service'
+      directory-name: 'echo-service'
+      environment: 'dev'
+      test-image: 'docker:latest'

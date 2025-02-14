@@ -1,0 +1,68 @@
+@baseScheduler=http://ec2-54-242-198-135.compute-1.amazonaws.com:32080
+@baseWorkflowManager=http://ec2-54-242-198-135.compute-1.amazonaws.com:32080
+
+###
+GET {{baseWorkflowManager}}/workflows
+
+
+###
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
+
+name: "UPLOAD_GENERATED_FILE"
+args:
+  - bucket:
+      default: ""
+  - s3_key:
+      default: ""
+  - aws_access_key:
+      default: ""
+  - aws_secret_key:
+      default: ""
+  - aws_session_token:
+      default: ""
+  - aws_region:
+      default: "us-east-1"
+steps:
+  - get_time:
+      service: "ubuntu_service"
+      task: "bash"
+      input:
+        cmd: "date"
+  - generate_file:
+      service: "ubuntu_service"
+      task: "bash"
+      input:
+        cmd: "echo {time} > /data/hello.txt"
+        time: "{get_time.stdout}"
+  - upload_file:
+      service: "s3_service"
+      task: "upload"
+      input:
+        file_path: "/hello.txt"
+        bucket_name: "$args.bucket"
+        s3_key: "$args.s3_key"
+        aws_access_key: "$args.aws_access_key"
+        aws_secret_key: "$args.aws_secret_key"
+        aws_region: "us-east-1"
+        aws_session_token: "$args.aws_session_token"
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+  "workflowName": "UPLOAD_GENERATED_FILE",
+  "tags": [],
+  "parameters": {},
+  "args": {
+    "bucket": "lechugabucket",
+    "s3_key": "hello.txt",
+    "aws_access_key": "ASIAU5FRU7CC5RYBABJ2",
+    "aws_secret_key": "YFUHTqmNWdz6H7Nh4mDNAYhqoIoNXPD3WPcjyQ1A",
+    "aws_session_token": "IQoJb3JpZ2luX2VjEPP//////////wEaCXVzLXdlc3QtMiJGMEQCIH1PhDbVONSKV9Bh711i0w0bDv9zx9arTX1No2XUw1z5AiByDPs51aik6nyiPeXJIZYLHVseu3clVaj6G8KQOjgiuiqtAggcEAEaDDMzNzUyNzUwMjk4MSIMnmc67GfJiiQu/4wfKooCs41OQyEPw5p1zg8AbrXY4Xw213iP4o7WnyX3dLUsWG620LvsKRXAKp+N67/wgxFJJ0eLJFIQz6ni5qXjf1KAY+GAhBseDBygCu+2IfOCNaGRuyrL4AXyJgTIB4zNlse2un1a2QfICJINjGNRcYFSkzSJjeHH83rJqkguJbqeFZnPB0ZlC2tj+cGt5vc90G5wIP9S21UxhXe1kpZpM4lV8D8kWWQAlVcoBmlZNCKomXEgwQTN/iDDgZVtDdfaNlinS+eKdhQ+BU9q9cFAvsMciBzF/3BwhAybksDTjxREKPhb1tXm/8SwnT7lyJ/neXyR8ZJz4dHDXoUetvna3Vqw1FnvvbE/+Hl8eeIw4fG4vQY6ngEwp/pnvzB6c/JrZiy5PwKgl5QdM6ZtrE95zvnLGdWdxkXuLpHETixXA4ydsvDJMyABGKlHKQi9NMP621EHC0NcC0tgk20r3gUfaJv2l16LRPA74hBPI4Ca5HRC/mOog6bghZNUaCDv0QlXpDz0sBd6BlwwiPLV1nS5oz2x4ONhXZJzwBV/7qKFlkgAFZDSFjjUrIdg3kqbMRcvbBAJWg=="
+  }
+}
+
+###
+GET {{baseScheduler}}/executions/b00e8bd8-2384-4b2e-a692-49ff476b9565

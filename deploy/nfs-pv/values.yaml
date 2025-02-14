@@ -1,0 +1,5 @@
+names: []
+storage: "2Gi"
+accessMode: "ReadWriteMany"
+nfsServer: "nfs-server.example.com"
+nfsPath: "/path/on/nfs"

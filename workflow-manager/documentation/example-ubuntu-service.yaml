@@ -1,0 +1,8 @@
+name: "Ubuntu list commands"
+args:
+steps:
+  - list:
+      service: "ubuntu_service"
+      task: "exec"
+      input:
+        cmd: "compgen -c"

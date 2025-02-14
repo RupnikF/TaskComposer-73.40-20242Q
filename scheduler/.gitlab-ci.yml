@@ -3,3 +3,5 @@ include:
     inputs:
       microservice-name: 'scheduler'
       directory-name: 'scheduler'
+      environment: 'dev'
+      test-image: 'golang:1.23'

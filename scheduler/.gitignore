@@ -29,3 +29,8 @@ go.work.sum
 *.iws
 *.ipr
 .idea/
+
+app
+
+.vscode/
+services.json

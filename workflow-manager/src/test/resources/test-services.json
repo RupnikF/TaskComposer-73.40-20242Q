@@ -1,0 +1,11 @@
+{
+  "services": {
+    "testService": {
+      "name": "Test Service",
+      "server": "localhost",
+      "inputTopic": "testInput",
+      "outputTopic": "testOutput",
+      "tasks": ["task1", "task2"]
+    }
+  }
+}

@@ -1,4 +1,4 @@
-FROM golang:1.23
+FROM golang:1.23 AS builder
 
 WORKDIR /usr/src/app
 
@@ -7,6 +7,16 @@ COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 
 COPY . .
-RUN go build -v -o /usr/local/bin/app ./...
+RUN go build -v -o /app .
 
-CMD ["app"]
+FROM ubuntu:latest
+
+WORKDIR /
+
+COPY --from=builder /app .
+COPY ./*.sh .
+COPY ./services.json /data/services.json
+
+RUN chmod +x ./*.sh
+
+ENTRYPOINT ["./start.sh"]

@@ -1,0 +1,15 @@
+name: "Basic workflow"
+tags:
+  - "Basic"
+args:
+  - property1:
+      default: "value"
+  - property2:
+      default: "value"
+steps:
+  - echo1:
+      service: "echo-service" # (default)
+      task: "echo"
+      input:
+          msg: "$args.property1"
+          url: "http://putoelqlee"

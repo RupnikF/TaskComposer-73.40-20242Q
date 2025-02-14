@@ -1,0 +1,57 @@
+@baseScheduler=http://ec2-54-242-198-135.compute-1.amazonaws.com:32080
+@baseWorkflowManager=http://ec2-54-242-198-135.compute-1.amazonaws.com:32080
+
+###
+GET {{baseWorkflowManager}}/workflows
+
+###
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
+
+name: "Conditional Case"
+args:
+  - property1:
+      default: "value"
+  - property2:
+      default: "value"
+steps:
+  - echo1:
+      service: "echo_service"
+      task: "echo"
+      input:
+        msg: "$args.property1"
+  - check-property:
+      service: 'native'
+      task: "if"
+      input:
+        leftValue: "echo1.msg"
+        rightValue: "$args.property2"
+        operator: "=="
+        onTrue: "echo2"
+        onFalse: "continue"
+  - premature:
+      service: "native"
+      task: "abort"
+  - echo2:
+      service: "echo_service"
+      task: "echo"
+      input:
+        msg: "check-property.result"
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+    "workflowName": "Conditional Case",
+    "tags": [],
+    "parameters": {},
+    "args": {
+        "property1": "Hola Mundo",
+        "property2": "Hola Mundo"
+    }
+}
+
+
+###
+GET {{baseScheduler}}/executions/b00e8bd8-2384-4b2e-a692-49ff476b9565
