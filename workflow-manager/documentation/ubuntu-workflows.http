@@ -16,10 +16,11 @@ steps:
 ###
 
 ###
+@rand={{rand}}
 POST {{baseWorkflowManager}}/workflows
 Content-Type: application/yaml
 
-name: "ubuntusuitev2"
+name: "ubuntusuitev4"
 steps:
   - list:
       service: "ubuntu_service"
@@ -50,7 +51,7 @@ POST {{baseWorkflowManager}}/triggers
 Content-Type: application/json
 
 {
-  "workflowName": "ubuntusuitev2",
+  "workflowName": "ubuntusuitev4",
   "tags": [],
   "parameters": {},
   "args": {
@@ -74,7 +75,8 @@ Content-Type: application/json
 GET http://localhost:8080/healthcheck
 
 ###
-GET {{baseScheduler}}/executions/fb20ebcd-7963-42d3-b75d-12365b3f1588
+GET {{baseScheduler}}/executions/17512c82-5309-46f3-b895-74f749eb5587
+
 
 ###
 POST {{baseScheduler}}/cancel-execution/da0f328e-3915-49b2-a416-0865427a649c

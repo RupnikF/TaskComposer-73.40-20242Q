@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"log"
+	"reflect"
 	"regexp"
 	"scheduler/jobs"
 	"scheduler/repository"
@@ -325,10 +326,10 @@ func (h *Handler) HandleServiceResponse(message []byte, header []kafka.Header) {
 		span.RecordError(fmt.Errorf("execution not executing: %s", state.Status))
 		return
 	}
-	outputErr := response.Outputs["error"]
-	if outputErr != nil {
+	outputErr, ok := response.Outputs["error"]
+	if ok {
 		execution.State.Status = repository.FAILED
-
+		fmt.Printf("Execution error: %s\n", reflect.TypeOf(outputErr))
 		errorMsg, ok := outputErr.(map[string]string)
 		if !ok {
 			errorMsg = map[string]string{

@@ -80,6 +80,7 @@ Runs bash
 func RunShell(inputs map[string]interface{}, span trace.Span) (ShellResponse, error) {
 	cmd, exists := inputs["cmd"]
 	if !exists {
+		span.RecordError(fmt.Errorf("cmd field not found in inputs: %v", inputs))
 		return ShellResponse{}, fmt.Errorf("the cmd field is required")
 	}
 	finalCmd, err := injectArguments(cmd.(string), inputs)

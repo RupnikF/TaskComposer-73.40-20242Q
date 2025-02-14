@@ -200,13 +200,14 @@ func main() {
 					defer func() {
 						err := reader.CommitMessages(context.Background(), msg)
 						if err != nil {
-						    logger.Error("Error committing message:", "err",err)
+							logger.Error("Error committing message:", "err", err)
 						}
 					}() // Commit message
 					if request.TaskName == "echo" {
 						span.SetAttributes(attribute.String("task.name", request.TaskName))
-						logger.Debug("Received message: %s", string(msg.Value))
+						// logger.Debug("Received message: %s", string(msg.Value))
 						requestMessage, ok := request.Inputs["msg"]
+
 						var echoResponse EchoResponse
 						if !ok {
 							span.RecordError(fmt.Errorf("property msg not found in echo request"))
@@ -219,11 +220,12 @@ func main() {
 								},
 							}
 						} else {
-							span.SetAttributes(attribute.String("task.response", (requestMessage.(string))))
+							msg := fmt.Sprintf("%v", requestMessage)
+							span.SetAttributes(attribute.String("task.response", msg))
 							echoResponse = EchoResponse{
 								ExecutionId: request.ExecutionId,
 								Outputs: map[string]interface{}{
-									"msg": requestMessage,
+									"msg": msg,
 								},
 							}
 						}
