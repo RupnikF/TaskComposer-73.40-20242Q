@@ -46,9 +46,6 @@ build-images:
       --destination "${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$[[ inputs.environment ]]"
       --destination "${IMAGE_BASE}/$[[ inputs.microservice-name ]]:$CI_COMMIT_SHORT_SHA"
       # se pushea tanto el tag de la rama como el tag del commit
-  needs:
-  - job: install-dependencies
-    artifacts: true
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
 
@@ -122,7 +119,8 @@ deliver-to-registry:
     # Push the image to Docker Hub using Kaniko
     - docker push "$DOCKERHUB_IMAGE"
   needs:
-  - job: package
+  - job: functional-test
+  - job: build-images
     artifacts: true
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
