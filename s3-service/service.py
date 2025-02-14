@@ -254,4 +254,4 @@ if __name__ == "__main__":
     service = S3Service()
     kafka_thread = threading.Thread(target=service.consume_kafka_messages, daemon=True)
     kafka_thread.start()
-    app.run(host='0.0.0.0', port=8083)
+    app.run(host='0.0.0.0', port=80)
