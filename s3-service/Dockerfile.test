@@ -1,0 +1,13 @@
+FROM python:3.12
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install -r requirements.txt
+
+COPY service.py test_s3_service.py ./
+
+ENTRYPOINT [ "python3" ]
+
+CMD [ "-m", "unittest", "test_s3_service.py" ]

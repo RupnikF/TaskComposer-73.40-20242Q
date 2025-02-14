@@ -1,0 +1,19 @@
+{{- range $name := .Values.names }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $name }}
+  labels:
+    app: {{ $name }}
+spec:
+  capacity:
+    storage: {{ $.Values.storage }}
+  volumeMode: Filesystem
+  accessModes:
+    - {{ $.Values.accessMode }}
+  storageClassName: nfs
+  nfs:
+    server: {{ $.Values.nfsServer }}
+    path: {{ $.Values.nfsPath }}
+  {{- end }}

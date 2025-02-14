@@ -1,0 +1,27 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: routes
+  namespace: workflow-manager
+spec:
+  routes:                          
+  - kind: Rule
+    match: PathPrefix(`/workflows`)
+    services:                       
+    - kind: Service
+      name: workflow-manager
+      port: 8080
+  - kind: Rule
+    match: PathPrefix(`/triggers`) && Method(`POST`)
+    services:                       
+    - kind: Service
+      name: workflow-manager
+      port: 8080         
+  - kind: Rule
+    match: Header(`Content-Type`, `application/grpc-web`)
+    services:
+    - kind: Service
+      name: workflow-manager-grpc
+      port: 9090  
+    scheme: h2c
+   

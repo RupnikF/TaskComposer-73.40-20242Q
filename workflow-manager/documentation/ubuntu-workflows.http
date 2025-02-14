@@ -1,0 +1,90 @@
+@baseScheduler=http://localhost:8080
+@baseWorkflowManager=http://localhost:8081
+
+###
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
+
+name: "listcmd"
+steps:
+  - list:
+      service: "ubuntu_service"
+      task: "bash"
+      input:
+        cmd: "compgen -c"
+
+###
+
+###
+@rand={{rand}}
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
+
+name: "ubuntusuitev4"
+steps:
+  - list:
+      service: "ubuntu_service"
+      task: "bash"
+      input:
+        cmd: "compgen -c"
+  - random:
+      service: "ubuntu_service"
+      task: "bash"
+      input:
+        cmd: "echo $((1 + $RANDOM % 10))"
+  - sum:
+      service: "ubuntu_service"
+      task: "eval"
+      input:
+        exp: '{{rand}} * 100'
+        rand: "random.stdout"
+
+###
+
+GET {{baseWorkflowManager}}/workflows
+
+###
+DELETE {{baseWorkflowManager}}/workflows/5
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+  "workflowName": "ubuntusuitev4",
+  "tags": [],
+  "parameters": {},
+  "args": {
+    "property1": "hola",
+    "property2": "chau"
+  }
+}
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+  "workflowName": "Ubuntu list commands",
+  "tags": [],
+  "parameters": {}
+}
+
+###
+
+GET http://localhost:8080/healthcheck
+
+###
+GET {{baseScheduler}}/executions/17512c82-5309-46f3-b895-74f749eb5587
+
+
+###
+POST {{baseScheduler}}/cancel-execution/da0f328e-3915-49b2-a416-0865427a649c
+
+###
+POST {{baseScheduler}}/cancel-execution/
+Content-Type: application/json
+
+{
+  "tags": ["hola","chau"]
+}

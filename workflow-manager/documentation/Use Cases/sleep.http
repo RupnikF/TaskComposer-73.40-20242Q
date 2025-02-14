@@ -1,0 +1,116 @@
+@baseScheduler=http://localhost:8080
+@baseWorkflowManager=http://localhost:8081
+
+###
+GET {{baseWorkflowManager}}/workflows
+
+
+###
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
+
+name: "Sleep and echo"
+args:
+  - sleepTime:
+      default: "10"
+steps:
+  - sleeping:
+      service: "ubuntu_service"
+      task: "bash"
+      input:
+        cmd: "sleep 10"
+  - echo:
+      service: "echo_service"
+      task: "echo"
+      input:
+        msg: "$args.sleepTime"
+
+###
+PUT {{baseWorkflowManager}}/workflows/9
+Content-Type: application/yaml
+
+name: "Sleep and echo"
+args:
+  - sleepTime:
+      default: "10"
+steps:
+  - sleeping:
+      service: "ubuntu_service"
+      task: "bash"
+      input:
+        cmd: "sleep 10"
+  - echo:
+      service: "echo_service"
+      task: "echo"
+      input:
+        msg: "$args.sleepTime"
+  - sleeping2:
+      service: "ubuntu_service"
+      task: "bash"
+      input:
+        cmd: "sleep 10"
+  - sleeping3:
+      service: "ubuntu_service"
+      task: "bash"
+      input:
+        cmd: "sleep 10"
+
+###
+@sleep={{sleep}}
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
+
+name: "Sleep and echo"
+args:
+  - sleepTime:
+      default: "10"
+steps:
+  - sleeping:
+      service: "ubuntu_service"
+      task: "bash"
+      input:
+        cmd: "sleep {{sleep}}"
+        sleep: "$args.sleepTime"
+  - echo:
+      service: "echo_service"
+      task: "echo"
+      input:
+        msg: "$args.sleepTime"
+  - sleeping2:
+      service: "ubuntu_service"
+      task: "bash"
+      input:
+        cmd: "sleep 10"
+  - sleeping3:
+      service: "ubuntu_service"
+      task: "bash"
+      input:
+        cmd: "sleep 10"
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+  "workflowName": "Sleep and echo",
+  "args": {
+    "sleepTime": "20"
+  },
+  "tags": ["sleep"]
+}
+
+###
+GET {{baseScheduler}}/executions/924092f0-8825-40dd-af45-c6ffe8fac50e
+
+### Cancelling
+POST {{baseScheduler}}/cancel-execution/5a6cec2c-9e9c-4059-a609-41a9bdb2a39c
+
+### Cancelling by tags
+POST {{baseScheduler}}/cancel-execution
+Content-Type: application/json
+
+{
+  "tags": ["sleep"]
+}
+
+###
+DELETE {{baseWorkflowManager}}/workflows/9

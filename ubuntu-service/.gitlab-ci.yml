@@ -1,0 +1,7 @@
+include:
+  - local: 'gitlab-ci-template.yml'
+    inputs:
+      microservice-name: 'ubuntu-service'
+      directory-name: 'ubuntu-service'
+      environment: 'dev'
+      test-image: 'docker:latest'

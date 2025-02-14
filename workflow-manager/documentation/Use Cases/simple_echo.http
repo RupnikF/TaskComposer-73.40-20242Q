@@ -1,0 +1,37 @@
+@baseScheduler=http://ec2-54-242-198-135.compute-1.amazonaws.com:32080
+@baseWorkflowManager=http://ec2-54-242-198-135.compute-1.amazonaws.com:32080
+
+###
+GET {{baseWorkflowManager}}/workflows
+
+###
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
+
+name: "Simple Echo"
+args:
+  - toEcho:
+      default: "value1"
+steps:
+  - echo1:
+      service: "echo_service"
+      task: "echo"
+      input:
+        msg: "$args.toEcho"
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+    "workflowName": "Simple Echo",
+    "tags": [],
+    "parameters": {},
+    "args": {
+          "toEcho": "Hola Mundo"
+    }
+}
+
+
+###
+GET {{baseScheduler}}/executions/b00e8bd8-2384-4b2e-a692-49ff476b9565
