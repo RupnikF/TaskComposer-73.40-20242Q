@@ -50,7 +50,9 @@ func ConsumeMessageWithHandler(c *kafka.Reader, timeout time.Duration, handler f
 			go func() {
 				handler(msg.Value, msg.Headers)
 				err := c.CommitMessages(context.Background(), msg)
-				consumerLogger.Error("Error commiting message", slog.Any("err", err))
+				if err != nil {
+				    consumerLogger.Error("Error commiting message", slog.Any("err", err))
+				}
 			}()
 		} else {
 			// The client will automatically try to recover from all errors.

@@ -220,7 +220,7 @@ func main() {
 					defer func(reader *kafka.Reader, ctx context.Context, msg kafka.Message) {
 						err := reader.CommitMessages(ctx, msg)
 						if err != nil {
-							span.RecordError(err)
+						    logger.Error("Error committing message:", "err" ,err)
 						}
 					}(reader, context.Background(), msg)
 					

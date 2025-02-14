@@ -199,7 +199,9 @@ func main() {
 					defer span.End() // Close span
 					defer func() {
 						err := reader.CommitMessages(context.Background(), msg)
-						logger.Error("Error committing message:", err)
+						if err != nil {
+						    logger.Error("Error committing message:", "err",err)
+						}
 					}() // Commit message
 					if request.TaskName == "echo" {
 						span.SetAttributes(attribute.String("task.name", request.TaskName))
