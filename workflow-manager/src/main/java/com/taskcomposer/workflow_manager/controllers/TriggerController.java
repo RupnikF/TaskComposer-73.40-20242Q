@@ -40,7 +40,7 @@ public class TriggerController {
         if (workflowOptional.isEmpty()) {
             return ResponseEntity.badRequest().body("Workflow not found");
         }
-        if(!body.getParameters().isEmpty()){
+        if(body.getParameters() != null && !body.getParameters().isEmpty()){
             //Validate Parameters
             var params = body.getParameters();
             if(params.get("cronDefinition") != null){

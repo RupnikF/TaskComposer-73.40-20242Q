@@ -6,6 +6,7 @@ import com.taskcomposer.workflow_manager.services.WorkflowService;
 import com.taskcomposer.workflow_manager.services.exceptions.ServiceNotFoundException;
 import com.taskcomposer.workflow_manager.services.exceptions.TaskNotFoundException;
 import com.taskcomposer.workflow_manager.services.exceptions.WorkflowAlreadyExistsException;
+import com.taskcomposer.workflow_manager.services.exceptions.WorkflowNotFoundException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +78,18 @@ public class WorkflowController {
         Optional<Workflow> workflow = workflowService.getWorkflowById(id);
 
         return workflow.map(value -> ResponseEntity.ok().body(value)).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PutMapping(path = "/{id}", produces = {"application/json"}, consumes = {"application/yaml", "application/x-yaml"})
+    public ResponseEntity<Object> putWorkflow(@PathVariable(name = "id") final Long id, @RequestBody final WorkflowDefinitionDTO body) {
+        Workflow createdWorkflow = body.toWorkflow();
+        try {
+            return ResponseEntity.ok(this.workflowService.updateWorkflow(id, createdWorkflow));
+        } catch (WorkflowNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (ServiceNotFoundException | TaskNotFoundException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")

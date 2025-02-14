@@ -8,9 +8,11 @@ import com.taskcomposer.workflow_manager.repositories.model.Workflow;
 import com.taskcomposer.workflow_manager.services.exceptions.ServiceNotFoundException;
 import com.taskcomposer.workflow_manager.services.exceptions.TaskNotFoundException;
 import com.taskcomposer.workflow_manager.services.exceptions.WorkflowAlreadyExistsException;
+import com.taskcomposer.workflow_manager.services.exceptions.WorkflowNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,18 +45,32 @@ public class WorkflowService {
         if (workflowRepository.existsByWorkflowName(workflow.getWorkflowName())) {
             throw new WorkflowAlreadyExistsException(workflow.getWorkflowName());
         }
-        if (workflow.getSteps() != null) {
-            for (Step step : workflow.getSteps()) {
-                Optional<com.taskcomposer.workflow_manager.repositories.model.Service> service = serviceRepository.getServiceByName(step.getService());
-                if (service.isEmpty()) {
-                    throw new ServiceNotFoundException(step.getService());
-                }
-                if (!service.get().isTaskInService(step.getTask())) {
-                    throw new TaskNotFoundException(step.getService(), step.getTask());
-                }
+        this.validateSteps(workflow.getSteps());
+        return workflowRepository.save(workflow);
+    }
+
+    private void validateSteps(Iterable<Step> steps) {
+        if (steps == null) {
+            return;
+        }
+        for (Step step : steps) {
+            Optional<com.taskcomposer.workflow_manager.repositories.model.Service> service = serviceRepository.getServiceByName(step.getService());
+            if (service.isEmpty()) {
+                throw new ServiceNotFoundException(step.getService());
+            }
+            if (!service.get().isTaskInService(step.getTask())) {
+                throw new TaskNotFoundException(step.getService(), step.getTask());
             }
         }
-        return workflowRepository.save(workflow);
+    }
+
+    public Workflow updateWorkflow(Long id, Workflow workflow) throws ServiceNotFoundException, TaskNotFoundException {
+        var possibleWorkflow = workflowRepository.findById(id).orElseThrow(() -> new WorkflowNotFoundException(workflow));
+        this.validateSteps(workflow.getSteps());
+        possibleWorkflow.setWorkflowName(workflow.getWorkflowName());
+        possibleWorkflow.setSteps(workflow.getSteps() != null ? new ArrayList<>(workflow.getSteps()) : new ArrayList<>());
+        possibleWorkflow.setArgs(workflow.getArgs() != null ? new ArrayList<>(workflow.getArgs()) : new ArrayList<>());
+        return workflowRepository.save(possibleWorkflow);
     }
 
     public boolean deleteWorkflowById(Long id) {
