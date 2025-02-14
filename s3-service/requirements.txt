@@ -5,3 +5,4 @@ opentelemetry-api
 opentelemetry-sdk
 opentelemetry-exporter-otlp
 types-confluent-kafka
+python-dotenv

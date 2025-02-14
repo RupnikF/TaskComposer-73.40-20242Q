@@ -15,6 +15,7 @@ from opentelemetry import trace
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
+from dotenv import load_dotenv
 
 provider = TracerProvider(resource=Resource.create({"service.name": "s3-service"}))
 processor = BatchSpanProcessor(ConsoleSpanExporter())
@@ -44,6 +45,7 @@ logger.setLevel(logging.INFO)  # Ensure logger level is set
 logger.addHandler(handler)
 logger.addHandler(handler2)
 
+load_dotenv()
 app = Flask(__name__)
 
 """
@@ -160,20 +162,22 @@ class S3Service():
 
     def get_ctx_headers(self, span) -> List:
         headers = {}
-        TraceContextTextMapPropagator().inject(span.get_span_context(), headers)
+        TraceContextTextMapPropagator().inject(carrier=headers)
         return [(k, v.encode('utf-8')) for k, v in headers.items()]
 
     def process_message(self, message):
         ctx = self.extract_ctx(message)
         with tracer.start_as_current_span("process_message", context=ctx) as span:
             try:
-                data = json.loads(message.value().decode("utf-8"))
-                span.set_attribute("data", data)
+                msg_str = message.value().decode("utf-8")
+                data = json.loads(msg_str)
+                span.set_attribute("data", msg_str)
                 execution_id = data.get("executionId")
                 task = data.get("taskName")
                 inputs = data.get("inputs", None)
                 if inputs:
-                    file_path = f"{FILES_BASE_PATH}/{inputs.get("file_path")}"
+                    temp = inputs.get("file_path")
+                    file_path = f"{FILES_BASE_PATH}/{temp}"
                     bucket_name = inputs.get("bucket_name")
                     s3_key = inputs.get("s3_key")
                     aws_access_key = inputs.get("aws_access_key")
@@ -250,4 +254,4 @@ if __name__ == "__main__":
     service = S3Service()
     kafka_thread = threading.Thread(target=service.consume_kafka_messages, daemon=True)
     kafka_thread.start()
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=8083)
