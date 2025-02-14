@@ -14,7 +14,7 @@ args:
       default: "value1"
 steps:
   - echo1:
-      service: "echo-service"
+      service: "echo_service"
       task: "echo"
       input:
         msg: "$args.toEcho"

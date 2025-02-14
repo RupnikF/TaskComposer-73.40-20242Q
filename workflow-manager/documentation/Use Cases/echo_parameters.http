@@ -14,7 +14,7 @@ args:
       default: "value1"
 steps:
   - echo1:
-      service: "echo-service"
+      service: "echo_service"
       task: "echo"
       input:
         msg: "$args.toEcho"
@@ -27,7 +27,7 @@ Content-Type: application/json
     "workflowName": "Simple Echo",
     "tags": [],
     "parameters": {
-        "delayed": "30",
+        "delayed": "30"
     },
     "args": {
           "toEcho": "Hola Mundo"
