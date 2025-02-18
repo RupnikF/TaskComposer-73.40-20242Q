@@ -5,7 +5,7 @@
 POST {{baseWorkflowManager}}/workflows
 Content-Type: application/yaml
 
-name: "IFTEST"
+name: "IFTESTv6"
 args:
   - property1:
       default: "value"
@@ -125,12 +125,12 @@ POST {{baseWorkflowManager}}/triggers
 Content-Type: application/json
 
 {
-  "workflowName": "IFTEST",
+  "workflowName": "IFTESTv6",
   "tags": [],
   "parameters": {},
   "args": {
     "property1": "hola",
-    "property2": "chau"
+    "property2": "asd"
   }
 }
 
@@ -185,7 +185,10 @@ Content-Type: application/json
 GET http://localhost:8080/healthcheck
 
 ###
-GET {{baseScheduler}}/executions/c3a47e55-6f66-4422-b9b8-f014d31118e4
+GET {{baseScheduler}}/executions/ccd8cdb7-5e63-464e-bdfe-ccd02c6e72ee
+
+
+
 
 ###
 POST {{baseScheduler}}/cancel-execution/da0f328e-3915-49b2-a416-0865427a649c

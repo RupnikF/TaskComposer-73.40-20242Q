@@ -1,13 +1,64 @@
 # TaskComposer
 
-## Pipeline for deploy manually 
+## Description
+An extensible, async-based workflow runner. 
 
-- Es necesario que se haya llenado con el .kube/config ($KUBE_CONFIG_FILE) del cluster de k8s y la IP del server NFS ($NFS_SERVER) en el CI/CD Variables
-- Correr un pipeline desde la pagina de GitLab en /Build/Pipelines/New Pipeline
-- Elegir la branch en la que se quiere deployar y correr el pipeline
-- Poner la variable "CI_MANUAL_DEPLOYMENT" con valor "true"
-- Esperar a que se corra todo el pipeline
-- Darle a "Play" en el job de "deploy" para que se ejecute el script de deploy
+Its a project created for 73.40-Microservices Architecture @ITBA. It is used to learn the basics of microservice architecture, async communication, Docker, Kubernetes, distributed processing and testing, CI/CD, and logging/tracing.
+
+Technologies used:
+- [Docker+Docker Compose](https://www.docker.com/)
+- [Go](https://go.dev/)
+- [Java](https://www.java.com/en/)
+- [Kubernetes](https://kubernetes.io/)
+- [Terraform](https://www.terraform.io/)
+- [Helm](https://helm.sh/)
+- Python
+- [Traefik](https://traefik.io/traefik/)
+- [Signoz](https://signoz.io/)
+- [Apache Kafka](https://kafka.apache.org/)
+- [etcd](https://etcd.io/)
+
+
+## Architecture
+![alt architecture](architecture.png "Final Architecture")
+
+## Services
+- [Workflow Manager](workflow-manager/README.md)
+- [Scheduler](scheduler/README.md)
+- [S3 Service](s3-service/README.md)
+- [Ubuntu Service](ubuntu-service/README.md)
+- [Echo Service](echo-service/README.md)
+
+## Requirements
+Generally, the project can be ran just using [Docker and Docker Compose](https://docs.docker.com/engine/install/). 
+
+Using ./local-all.sh launches all core services and task runners, however you should specify different host ports for the [scheduler](scheduler/README.md) and [workflow-manager](workflow-manager/README.md). Of course, this is not that practical for development, so generally there are two different environment variables, .env.docker for running in docker compose and .env.local for running locally without Docker. 
+
+Keep in mind that if you want to run it locally the system has to have the programming language and dependencies installed.
+
+For the Signoz service, we haven't have much luck running it locally due to the fact that it requires a docker compose that you have to clone manually. Just ignore the warnings of not tracking correctly.
+
+## Deployment
+The service runs on a Kubernetes cluster, which we didn't have at the time, so if you are running this service on AWS, the [terraform](terraform/README.md) lets you spin up a simple cluster of 1 main node and 3 worker nodes. It also spins up a NFS Server, which is used for file sharing between services. 
+
+For the final deployment, you need to have each image pushed onto a Docker Image Registry, and then run the Helmfile so it can create the changeset and push the final changes to the Kubernetes cluster.
+
+There are two methods of deployment, manual and continuous deployment.
+The [deploy](deploy/README.md) module has both templates. The continuous deployment has to have the credentials to a valid Docker Registry (we used a public one so we don't have to fiddle with security, this is NOT recommended) and the .kube/config file from the deployed cluster.
+
+- It must be filled with the .kube/config ($KUBE_CONFIG_FILE) of the k8s cluster and the IP of the NFS server ($NFS_SERVER) in the CI/CD Variables
+- Run a pipeline from the GitLab page in /Build/Pipelines/New Pipeline
+- Choose the branch in which you want to deploy and run the pipeline
+- Set the variable "CI_MANUAL_DEPLOYMENT" with value "true"
+- Wait for the entire pipeline to run
+- Click "Play" in the "deploy" job to execute the deploy script
+
+Manual deployment consists on using helmfile apply locally.
+
+Fill the relevant environment variables in .env.template
+```
+helmfile init && helmfile apply
+```
 
 ```
 El deploy de la aplicación se hace manualmente debido a que AWS educate no nos otorga un ambiente de Kubernetes estable. Si tuviesemos un ambiente que no se muera a la hora el deploy se haría automáticamente.
@@ -23,44 +74,7 @@ Use http://<your-machine-ip>:4318 for the java endpoint and
 <your-machine-ip>:4318 for the go endpoint for OpenTelemetry
 ```
 
-### Templates de ReadMe
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+## Authors
+- [Franco Rupnik](https://github.com/RupnikF)
+- [Matías Manzur](https://github.com/MatyManzur)
+- [Federico Shih](https://github.com/Federico-Shih)
