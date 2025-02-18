@@ -1,3 +1,14 @@
+# Helm and Helmfile deployment 
+Manages the Kubernetes deployment using helmfile and Helm. 
+- Deployment of all services
+- Adds the Persistent Volumes and Persistent Volume Claims on the NFS server.
+- Deploys the Signoz logging and tracing service.
+- Deploys the Traefik API Gateway
+- Deploys the Traefik Ingress routes for the exposed routes.
+
+Currently you are not able to view the Traefik dashboard, this is a feature not a bug™. This is due to Signoz not supporting modifying the BASE_HREF and forcing us to run it on the root path (/). 
+
+
 ## Deploy en k8s con Helm
 Tener ya instalados docker, minikube, kubectl y helm \
 **kubectl**: https://kubernetes.io/docs/tasks/tools/

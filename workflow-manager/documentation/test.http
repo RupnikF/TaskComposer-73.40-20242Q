@@ -1,0 +1,112 @@
+@baseScheduler=http://localhost:8080
+@baseWorkflowManager=http://localhost:8081
+@time={{time}}
+
+###
+GET {{baseWorkflowManager}}/workflows
+
+###
+DELETE {{baseWorkflowManager}}/workflows/1
+
+
+###
+POST {{baseWorkflowManager}}/workflows
+Content-Type: application/yaml
+
+name: "COMPLEX_WFLOW"
+args:
+    - bucket:
+        default: ""
+    - s3_file_to_download:
+        default: ""
+    - s3_file_to_upload:
+        default: ""
+    - aws_access_key:
+        default: ""
+    - aws_secret_key:
+        default: ""
+    - aws_session_token:
+        default: ""
+    - aws_region: 
+        default: "us-east-1"
+    - expected_content:
+        default: "ok"
+steps:
+    - download_file:
+        service: "s3_service"
+        task: "download"
+        input:
+            file_path: "hello.txt"
+            bucket_name: "$args.bucket"
+            s3_key: "$args.s3_file_to_download"
+            aws_access_key: "$args.aws_access_key"
+            aws_secret_key: "$args.aws_secret_key"
+            aws_region: "$args.aws_region"
+            aws_session_token: "$args.aws_session_token"
+    - echo_content:
+        service: "ubuntu_service"
+        task: "bash"
+        input:
+            cmd: "cat /data/hello.txt"
+    - conditional:
+        service: 'native'
+        task: "if"
+        input:
+            leftValue: "echo_content.stdout"
+            rightValue: "$args.expected_content"
+            operator: "=="
+            onTrue: "get_time"
+            onFalse: "continue"
+    - echo_bye:
+        service: "echo_service"
+        task: "echo"
+        input:
+            msg: "Content was not expected, Bye!"
+    - premature:
+        service: "native"
+        task: "abort"
+    - get_time:
+        service: "ubuntu_service"
+        task: "bash"
+        input:
+            cmd: "date"
+    - generate_file:
+        service: "ubuntu_service"
+        task: "bash"
+        input:
+            cmd: "echo {{time}} > /data/time.txt"
+            time: "get_time.stdout"
+    - upload_file:
+        service: "s3_service"
+        task: "upload"
+        input:
+            file_path: "/time.txt"
+            bucket_name: "$args.bucket"
+            s3_key: "$args.s3_key"
+            aws_access_key: "$args.aws_access_key"
+            aws_secret_key: "$args.aws_secret_key"
+            aws_region: "us-east-1"
+            aws_session_token: "$args.aws_session_token"
+
+###
+POST {{baseWorkflowManager}}/triggers
+Content-Type: application/json
+
+{
+  "workflowName": "COMPLEX_WFLOW",
+  "tags": [],
+  "parameters": {},
+  "args": {
+    "bucket": "62032-bucket",
+    "s3_file_to_download": "hello.txt",
+    "s3_file_to_upload": "time.txt",
+    "expected_content": "ok",
+    "aws_access_key": "",
+    "aws_secret_key": "",
+    "aws_region": "us-east-1",
+    "aws_session_token": ""
+  }
+}
+
+###
+GET {{baseScheduler}}/executions/90938756-7362-47c3-8124-508dfc235877
