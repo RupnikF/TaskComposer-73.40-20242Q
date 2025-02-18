@@ -99,7 +99,7 @@ Content-Type: application/json
 }
 
 ###
-GET {{baseScheduler}}/executions/924092f0-8825-40dd-af45-c6ffe8fac50e
+GET {{baseScheduler}}/executions/6ebee957-1a0d-427b-a64c-b30096debe36
 
 ### Cancelling
 POST {{baseScheduler}}/cancel-execution/5a6cec2c-9e9c-4059-a609-41a9bdb2a39c
