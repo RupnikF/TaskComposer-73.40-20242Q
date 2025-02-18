@@ -101,10 +101,10 @@ Content-Type: application/json
     "s3_file_to_download": "hello.txt",
     "s3_file_to_upload": "time.txt",
     "expected_content": "ok",
-    "aws_access_key": "ASIASW5VFNRUOXH46H7J",
-    "aws_secret_key": "fOPqEBbg7VnaS9f+y2drafpqNFMfLLATd0897Bp6",
+    "aws_access_key": "",
+    "aws_secret_key": "",
     "aws_region": "us-east-1",
-    "aws_session_token": "IQoJb3JpZ2luX2VjEA0aCXVzLXdlc3QtMiJHMEUCIQDfAtkBqrzGKtX7bBbfs6rDfJvGYfe4w7xEwLoPhG7g6QIgRWZYzI2zUAm5F5q+X0OMjdDN2ZHo46njhkp21DyK/g4qrQIINhABGgwxODY2NzQxNDY0MDgiDJNCRANwC/tkSlCnVCqKAsS2Gq6XUAF280Ff4aKygYX1JgCpZhEbVvDCJKFoMTOT9jB5dMUwcSAg32aCyDyVEg85uRHcsGjrJwfslIxMIrn5IXIb/+HMrsfj9Rb7RSjqAJxqiP5pQ87M9SkKiXt6NXsxe6NhvY6xi5aaEaDMzTb4H8Ri8Ae5kihwh1eDOSuu9rgjhOVy+orVF862+3VtB/my7aq6m4wioqHLREc1CNcwILn7qqaDI4/Lf+iW4ASd1AT8PvoKtgN5NnPzotzRFiULn1YB9HtAtqqroz67Wk5cuNisg989g3UmdF99GAehR0invrwqYZ3yIDJ05Tq4v6y1/htG6pz+LcinZ1lc/FbuKG5vDflJOexXMPvOvr0GOp0BiFqh1PMr4irLNRWpl5oBnJ91inGlxYYgh7vKowFn/BpcO5BIGb6laKYMespAacVziNhss6VMwWkRo2CpoZsti3dGConmyncCpiHkBvQQ54Q5ja6Nduk/JHXNIWgbfPDOahEGF8HwmxeM6KsGYZm6L+jvaHNiyov/6xrEV42Qs1KczzKD0BjNOQVhi2IIV0EM9bgw6KB2iCDNytxXgQ=="
+    "aws_session_token": ""
   }
 }
 

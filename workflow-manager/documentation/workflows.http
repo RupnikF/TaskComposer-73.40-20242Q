@@ -146,9 +146,9 @@ Content-Type: application/json
     "file_path": "prueba2.mp4",
     "bucket": "lechugabucket",
     "s3_key": "sds_tp2_s5_a.mp4",
-    "aws_access_key": "ASIAU5FRU7CCYHJXSJHV",
-    "aws_secret_key": "0+rb2n60/+98Cc06XZiRM2gFfBJyk5tvGuT/QWgh",
-    "aws_session_token": "IQoJb3JpZ2luX2VjEHEaCXVzLXdlc3QtMiJHMEUCIENh3Mpr984XNImtmCuQLQ8fDNRJ2SnetFFCAir9VuYRAiEAsrzdTJ7lROpqFnugEfbydcei47wlF/D73OzeP5Eh4+4qtgIIiv//////////ARABGgwzMzc1Mjc1MDI5ODEiDHNhJCu8ySOo0X6GQSqKAto3feqbyvL+2cBHWv0iyL+rmNBt1DXer9GzdGHaay7IMVagdjbL0x7lmGJz1TgKUwvyuZYwSSVM5+5uTeGoo/rHTvKmx/bUjL7bymsC5ZiI0OCj5EYf7kqIGe2hA4vrgVMxuePTuJOw3nNJutu5hfeJTty8PhKhP3pZrPJMhZeJ/T/Txpfe+GsV2RSFBbXyx28JW0ltWCQPT0o0/3Hn/wNnEAUXjlgrJghbQaki9ubR7HOUemlfeOw7mV6d/UUnzVGp8tW9D1AjNMX8SbvsTcpgqAZ5CKQpmXWDmIdn+mXOg63UmNb17VkvkehVBLmTK6EVB+JqlGdAKOCwH1VVumP8zxDP01LYc8OHMOG5nL0GOp0BUKm2uFDGJPOVIKbxFGxdQ9ffpzzBVDpktwX9YxN2VKjNIEMmlOgRB/oV8JYM/kbW6Q5VZGLkxwsagHvJ/ws4GU3tm0Zo4DtbEqSPLaSP+MHTmMvb+3EpzPJNNXd5g3Fc3So5pMRZYA2aM8ljQsLkXkytT02ddwQaKEqvYJCbF6U942mCwhvD1S0W0xnpNRyumDi0mur1/gF0u/cWkQ=="
+    "aws_access_key": "",
+    "aws_secret_key": "",
+    "aws_session_token": ""
   }
 }
 
